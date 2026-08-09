@@ -1,10 +1,11 @@
-using CLK.Todos.Web.Services;
+using CLK.Todos.Accesses.Repositories;
+using CLK.Todos.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services.AddSingleton<ITodoStore, InMemoryTodoStore>();
+builder.Services.AddSingleton<ITodoRepository, MockTodoRepository>();
 
 var app = builder.Build();
 

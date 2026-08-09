@@ -1,13 +1,15 @@
-using CLK.Todos.Web.Models;
+using CLK.Todos.Entities;
+using CLK.Todos.Repositories;
 
-namespace CLK.Todos.Web.Services;
+namespace CLK.Todos.Accesses.Repositories;
 
 /// <summary>
-/// 最簡單的記憶體內資料存放：用 List 存資料，重啟程式就會清空。
+/// Mock 實作：用記憶體內 List 存資料，重啟程式就會清空。
 /// 用 lock 保護，避免多個請求同時新增/修改造成資料錯亂。
-/// 之後若要換成資料庫，只要另外實作 ITodoStore 就好，Controller 不用改。
+/// 之後若要換成真正的資料庫，只要在這個專案（或未來的實作專案）另外新增
+/// ITodoRepository 的實作類別即可，Domain 跟呼叫端都不用改。
 /// </summary>
-public class InMemoryTodoStore : ITodoStore
+public class MockTodoRepository : ITodoRepository
 {
     private readonly List<Todo> _todos = new();
     private readonly object _lock = new();

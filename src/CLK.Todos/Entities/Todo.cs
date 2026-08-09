@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace CLK.Todos.Web.Models;
+namespace CLK.Todos.Entities;
 
 public class Todo
 {

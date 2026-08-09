@@ -1,22 +1,22 @@
-using CLK.Todos.Web.Models;
-using CLK.Todos.Web.Services;
+using CLK.Todos.Entities;
+using CLK.Todos.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CLK.Todos.Web.Controllers;
 
 public class TodosController : Controller
 {
-    private readonly ITodoStore _todoStore;
+    private readonly ITodoRepository _todoRepository;
 
-    public TodosController(ITodoStore todoStore)
+    public TodosController(ITodoRepository todoRepository)
     {
-        _todoStore = todoStore;
+        _todoRepository = todoRepository;
     }
 
     // GET: /Todos
     public IActionResult Index()
     {
-        var todos = _todoStore.GetAll();
+        var todos = _todoRepository.GetAll();
         return View(todos);
     }
 
@@ -36,14 +36,14 @@ public class TodosController : Controller
             return View(todo);
         }
 
-        _todoStore.Add(todo);
+        _todoRepository.Add(todo);
         return RedirectToAction(nameof(Index));
     }
 
     // GET: /Todos/Edit/5
     public IActionResult Edit(int id)
     {
-        var todo = _todoStore.GetById(id);
+        var todo = _todoRepository.GetById(id);
         if (todo is null)
         {
             return NotFound();
@@ -67,14 +67,14 @@ public class TodosController : Controller
             return View(todo);
         }
 
-        _todoStore.Update(todo);
+        _todoRepository.Update(todo);
         return RedirectToAction(nameof(Index));
     }
 
     // GET: /Todos/Delete/5
     public IActionResult Delete(int id)
     {
-        var todo = _todoStore.GetById(id);
+        var todo = _todoRepository.GetById(id);
         if (todo is null)
         {
             return NotFound();
@@ -88,7 +88,7 @@ public class TodosController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult DeleteConfirmed(int id)
     {
-        _todoStore.Delete(id);
+        _todoRepository.Delete(id);
         return RedirectToAction(nameof(Index));
     }
 
@@ -97,7 +97,7 @@ public class TodosController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult Toggle(int id)
     {
-        _todoStore.ToggleDone(id);
+        _todoRepository.ToggleDone(id);
         return RedirectToAction(nameof(Index));
     }
 }

@@ -1,8 +1,8 @@
-using CLK.Todos.Web.Models;
+using CLK.Todos.Entities;
 
-namespace CLK.Todos.Web.Services;
+namespace CLK.Todos.Repositories;
 
-public interface ITodoStore
+public interface ITodoRepository
 {
     IReadOnlyList<Todo> GetAll();
 
