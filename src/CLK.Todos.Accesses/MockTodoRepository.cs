@@ -1,4 +1,6 @@
+// Imports
 using CLK.Todos;
+
 
 namespace CLK.Todos.Accesses
 {
@@ -10,31 +12,23 @@ namespace CLK.Todos.Accesses
     /// </summary>
     public class MockTodoRepository : ITodoRepository
     {
+        // Fields
         private readonly List<Todo> _todos = new();
+
         private readonly object _lock = new();
+
         private int _nextId = 1;
 
-        public IReadOnlyList<Todo> GetAll()
-        {
-            lock (_lock)
-            {
-                return _todos
-                    .OrderBy(t => t.IsDone)
-                    .ThenByDescending(t => t.CreatedAt)
-                    .ToList();
-            }
-        }
 
-        public Todo? GetById(int id)
-        {
-            lock (_lock)
-            {
-                return _todos.FirstOrDefault(t => t.Id == id);
-            }
-        }
-
+        // Methods
         public Todo Add(Todo todo)
         {
+            #region Contracts
+
+            ArgumentNullException.ThrowIfNull(todo);
+
+            #endregion
+
             lock (_lock)
             {
                 todo.Id = _nextId++;
@@ -45,6 +39,12 @@ namespace CLK.Todos.Accesses
 
         public bool Update(Todo todo)
         {
+            #region Contracts
+
+            ArgumentNullException.ThrowIfNull(todo);
+
+            #endregion
+
             lock (_lock)
             {
                 var existing = _todos.FirstOrDefault(t => t.Id == todo.Id);
@@ -59,7 +59,7 @@ namespace CLK.Todos.Accesses
             }
         }
 
-        public bool Delete(int id)
+        public bool Remove(int id)
         {
             lock (_lock)
             {
@@ -74,18 +74,22 @@ namespace CLK.Todos.Accesses
             }
         }
 
-        public bool ToggleDone(int id)
+        public Todo GetById(int id)
         {
             lock (_lock)
             {
-                var existing = _todos.FirstOrDefault(t => t.Id == id);
-                if (existing is null)
-                {
-                    return false;
-                }
+                return _todos.FirstOrDefault(t => t.Id == id);
+            }
+        }
 
-                existing.IsDone = !existing.IsDone;
-                return true;
+        public IReadOnlyList<Todo> GetAll()
+        {
+            lock (_lock)
+            {
+                return _todos
+                    .OrderBy(t => t.IsDone)
+                    .ThenByDescending(t => t.CreatedAt)
+                    .ToList();
             }
         }
     }

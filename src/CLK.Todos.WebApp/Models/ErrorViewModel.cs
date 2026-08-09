@@ -2,8 +2,15 @@ namespace CLK.Todos.WebApp
 {
     public class ErrorViewModel
     {
-        public string? RequestId { get; set; }
+        // Properties
+        public string RequestId { get; set; }
 
-        public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+        public bool ShowRequestId
+        {
+            get
+            {
+                return !string.IsNullOrEmpty(RequestId);
+            }
+        }
     }
 }

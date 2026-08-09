@@ -2,16 +2,15 @@ namespace CLK.Todos
 {
     public interface ITodoRepository
     {
-        IReadOnlyList<Todo> GetAll();
-
-        Todo? GetById(int id);
-
+        // Methods
         Todo Add(Todo todo);
 
         bool Update(Todo todo);
 
-        bool Delete(int id);
+        bool Remove(int id);
 
-        bool ToggleDone(int id);
+        Todo GetById(int id);
+
+        IReadOnlyList<Todo> GetAll();
     }
 }

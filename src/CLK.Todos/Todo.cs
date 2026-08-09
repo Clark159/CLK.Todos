@@ -1,9 +1,12 @@
+// Imports
 using System.ComponentModel.DataAnnotations;
+
 
 namespace CLK.Todos
 {
     public class Todo
     {
+        // Properties
         public int Id { get; set; }
 
         [Required(ErrorMessage = "請輸入待辦事項標題")]
@@ -13,5 +16,12 @@ namespace CLK.Todos
         public bool IsDone { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+
+        // Methods
+        public void ToggleDone()
+        {
+            IsDone = !IsDone;
+        }
     }
 }

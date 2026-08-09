@@ -6,11 +6,30 @@ namespace CLK.Todos
     /// </summary>
     public class TodoContext
     {
-        public TodoContext(ITodoRepository todos)
+        // Fields
+        private readonly ITodoRepository _todoRepository;
+
+
+        // Constructors
+        public TodoContext(ITodoRepository todoRepository)
         {
-            Todos = todos;
+            #region Contracts
+
+            ArgumentNullException.ThrowIfNull(todoRepository);
+
+            #endregion
+
+            _todoRepository = todoRepository;
         }
 
-        public ITodoRepository Todos { get; }
+
+        // Properties
+        public ITodoRepository TodoRepository
+        {
+            get
+            {
+                return _todoRepository;
+            }
+        }
     }
 }

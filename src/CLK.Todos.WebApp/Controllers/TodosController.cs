@@ -1,21 +1,34 @@
+// Imports
 using CLK.Todos;
 using Microsoft.AspNetCore.Mvc;
+
 
 namespace CLK.Todos.WebApp
 {
     public class TodosController : Controller
     {
-        private readonly TodoContext _context;
+        // Fields
+        private readonly TodoContext _todoContext;
 
-        public TodosController(TodoContext context)
+
+        // Constructors
+        public TodosController(TodoContext todoContext)
         {
-            _context = context;
+            #region Contracts
+
+            ArgumentNullException.ThrowIfNull(todoContext);
+
+            #endregion
+
+            _todoContext = todoContext;
         }
 
+
+        // Methods
         // GET: /Todos
         public IActionResult Index()
         {
-            var todos = _context.Todos.GetAll();
+            var todos = _todoContext.TodoRepository.GetAll();
             return View(todos);
         }
 
@@ -28,21 +41,25 @@ namespace CLK.Todos.WebApp
         // POST: /Todos/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create([Bind("Title")] Todo todo)
+        public IActionResult Create([Bind("Title")] Todo todo = null)
         {
-            if (!ModelState.IsValid)
+            #region Contracts
+
+            if (todo is null || !ModelState.IsValid)
             {
                 return View(todo);
             }
 
-            _context.Todos.Add(todo);
+            #endregion
+
+            _todoContext.TodoRepository.Add(todo);
             return RedirectToAction(nameof(Index));
         }
 
         // GET: /Todos/Edit/5
         public IActionResult Edit(int id)
         {
-            var todo = _context.Todos.GetById(id);
+            var todo = _todoContext.TodoRepository.GetById(id);
             if (todo is null)
             {
                 return NotFound();
@@ -54,26 +71,25 @@ namespace CLK.Todos.WebApp
         // POST: /Todos/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, [Bind("Id,Title,IsDone")] Todo todo)
+        public IActionResult Edit(int id, [Bind("Id,Title,IsDone")] Todo todo = null)
         {
-            if (id != todo.Id)
-            {
-                return NotFound();
-            }
+            #region Contracts
 
-            if (!ModelState.IsValid)
+            if (todo is null || id != todo.Id || !ModelState.IsValid)
             {
                 return View(todo);
             }
 
-            _context.Todos.Update(todo);
+            #endregion
+
+            _todoContext.TodoRepository.Update(todo);
             return RedirectToAction(nameof(Index));
         }
 
         // GET: /Todos/Delete/5
         public IActionResult Delete(int id)
         {
-            var todo = _context.Todos.GetById(id);
+            var todo = _todoContext.TodoRepository.GetById(id);
             if (todo is null)
             {
                 return NotFound();
@@ -87,7 +103,7 @@ namespace CLK.Todos.WebApp
         [ValidateAntiForgeryToken]
         public IActionResult DeleteConfirmed(int id)
         {
-            _context.Todos.Delete(id);
+            _todoContext.TodoRepository.Remove(id);
             return RedirectToAction(nameof(Index));
         }
 
@@ -96,7 +112,14 @@ namespace CLK.Todos.WebApp
         [ValidateAntiForgeryToken]
         public IActionResult Toggle(int id)
         {
-            _context.Todos.ToggleDone(id);
+            var todo = _todoContext.TodoRepository.GetById(id);
+            if (todo is null)
+            {
+                return NotFound();
+            }
+
+            todo.ToggleDone();
+            _todoContext.TodoRepository.Update(todo);
             return RedirectToAction(nameof(Index));
         }
     }
