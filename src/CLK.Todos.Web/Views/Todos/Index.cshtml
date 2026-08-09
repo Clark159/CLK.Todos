@@ -1,0 +1,49 @@
+@model IReadOnlyList<Todo>
+
+@{
+    ViewData["Title"] = "待辦清單";
+}
+
+<h1>待辦清單</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">+ 新增待辦事項</a>
+</p>
+
+@if (!Model.Any())
+{
+    <p>目前沒有待辦事項，點上面按鈕新增一筆吧。</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>項目</th>
+                <th style="width: 1%; white-space: nowrap;">狀態</th>
+                <th style="width: 1%; white-space: nowrap;">建立時間</th>
+                <th style="width: 1%; white-space: nowrap;">動作</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var todo in Model)
+            {
+                <tr>
+                    <td>@todo.Title</td>
+                    <td style="white-space: nowrap;">
+                        <form asp-action="Toggle" asp-route-id="@todo.Id" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm @(todo.IsDone ? "btn-success" : "btn-outline-secondary")">
+                                @(todo.IsDone ? "已完成" : "未完成")
+                            </button>
+                        </form>
+                    </td>
+                    <td style="white-space: nowrap;">@todo.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td style="white-space: nowrap;">
+                        <a asp-action="Edit" asp-route-id="@todo.Id" class="btn btn-sm btn-outline-primary">編輯</a>
+                        <a asp-action="Delete" asp-route-id="@todo.Id" class="btn btn-sm btn-outline-danger">刪除</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
