@@ -9,8 +9,8 @@ namespace CLK.Todos
 
         bool Remove(int id);
 
-        Todo GetById(int id);
+        Todo FindById(int id);
 
-        IReadOnlyList<Todo> GetAll();
+        IReadOnlyList<Todo> FindAll();
     }
 }

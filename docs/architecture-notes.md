@@ -138,7 +138,7 @@ Worker、不同的 Web 框架）重複使用而不用背 ASP.NET Core 的相依�
   - Domain 的入口物件本身也要註冊：`AddSingleton<TodoContext>()`
     （建構子依賴的 Repository 介面會由 DI 容器自動解析注入）。
 - Controller（或其他呼叫端）一律只依賴 `TodoContext`，透過它的屬性存取
-  Repository（例如 `_todoContext.TodoRepository.GetAll()`），**不直接注入
+  Repository（例如 `_todoContext.TodoRepository.FindAll()`），**不直接注入
   Repository 介面**。
 
 ## 7. 建構子注入命名慣例
@@ -200,8 +200,9 @@ public class TodoContext
   緊接著寫，不空行**。
 - 同一分類內，第一個之後的每個成員之間空一行。
 - 不同分類之間空兩行。
-- `// Imports`（`using` 陳述式）寫在檔案最上方、`namespace` 區塊外面，
-  規則跟其他分類一樣（標頭後不空行、跟後面的 `namespace` 空兩行）。
+- **`Imports`（`using` 陳述式）是例外，不算進上面的分類清單**：不加
+  `// Imports` 這種標頭註解，`using` 陳述式直接寫在檔案最上方，跟下面的
+  `namespace` 之間只空**一行**（不是分類之間慣例的兩行）。
 - **屬性一律用完整的 `get` / `return` 寫法，不要用 `=>` expression-bodied
   寫法**（自動屬性 `{ get; set; }` 不受影響，這條只針對有邏輯、需要寫
   `return` 的計算屬性）。
@@ -252,16 +253,19 @@ namespace CLK.Todos
 - **字串參數**：不能為 `null` 或空白，用 `ArgumentException.ThrowIfNullOrWhiteSpace(參數)`。
 - **值型別參數**（`int`、`bool`、`DateTime` 這類）：本身不可能是 `null`，
   不需要合約檢查。
-- **如果某個參數本來就預期可能傳入 `null`**（該參數是可選的），直接給預設值
-  `null`（例如 `Todo todo = null`，注意**不要加 `?`**——見第 10 節，這個
-  專案的 Nullable 參考型別功能是關閉的），這種參數**不用**加上述的 not-null
-  檢查——用預設值本身表達「這裡允許 null」，不用再寫 if 判斷排除 null 情境，
-  但呼叫這個參數的邏輯要自己判斷 `is null` 再決定怎麼處理。
-- **MVC Controller 的驗證判斷（例如 `ModelState.IsValid`）也算合約檢查的一種**，
-  一樣放進 `#region Contracts`，即使它不是丟例外、而是提前 `return`。
+- **MVC Controller 的驗證判斷（例如 `ModelState.IsValid`、路由 id 跟表單 id
+  是否一致）也算合約檢查的一種**，一樣放進 `#region Contracts`，即使它不是
+  丟例外、而是提前 `return`。
+- **每一個檢查都獨立成一行、一個判斷式，不要用 `||` / `&&` 把多個檢查
+  合併成一個條件**——即使結果都是「不合法就 `return`」，也要拆開寫，
+  一眼就能看出這裡總共驗證了幾件事、各自驗證什麼。
+- **布林條件不要用 `!` 取反**，改用 `== false` / `== true` 明確寫出來
+  （這其實是全專案通則，不只合約檢查適用，見第 14 節）。
+- 像 `if (條件) return ...;` 這種單一陳述式的 guard clause，**可以省略
+  大括號、寫成一行**，不用展開成四行的 `if { }` 區塊。
 
-`#region Contracts` 的格式：標頭後空一行、檢查內容、內容後空一行、
-`#endregion`：
+`#region Contracts` 的格式：**標頭後空一行、`#endregion` 前空一行**；
+但如果檢查內容不只一行，**內容彼此之間不空行**（緊貼在一起）：
 
 ```csharp
 #region Contracts
@@ -287,29 +291,47 @@ public TodoContext(ITodoRepository todoRepository)
 ```
 
 目前套用 not-null 檢查的地方：`TodoContext` 建構子、`HomeController` /
-`TodosController` 建構子、`MockTodoRepository.Add` / `Update`。字串合約檢查
+`TodosController` 建構子、`MockTodoRepository.Add` / `Update`、
+`TodosController.Create` / `Edit`（POST，`todo` 參數）。字串合約檢查
 （`ThrowIfNullOrWhiteSpace`）目前程式碼裡還沒有適用的字串參數，先在這裡記下
 規則，之後遇到再套用。
 
-**可為 null 的實例，搭配 MVC 驗證判斷**：`TodosController.Create` / `Edit`
-（POST）的 `todo` 參數給預設值 `Todo todo = null`——因為表單送出的資料理論上
-可能因為某些情況綁定不到值，這裡預期它可能是 `null`，所以不加 not-null
-檢查，改成跟 `ModelState.IsValid` 一起放進 `#region Contracts`，不合法就
-提前 `return` 導回同一頁：
+**not-null 檢查 + MVC 驗證判斷放在同一個 `#region Contracts`，但各自獨立
+一行**：`TodosController.Create` / `Edit`（POST）的 `todo` 參數給預設值
+`Todo todo = null`（讓 MVC action 簽章上看得出這個參數可選），但一進方法
+本體還是先用 `ArgumentNullException.ThrowIfNull(todo)` 擋掉 null（正常
+情況下 model binder 一定會建立實例，這裡是防禦性寫法，不是預期會發生），
+接著才是跟業務規則有關的驗證，各自獨立一行、不合法就提前 `return`：
 
 ```csharp
 public IActionResult Create([Bind("Title")] Todo todo = null)
 {
     #region Contracts
 
-    if (todo is null || !ModelState.IsValid)
-    {
-        return View(todo);
-    }
+    ArgumentNullException.ThrowIfNull(todo);
+    if (ModelState.IsValid == false) return View(todo);
 
     #endregion
 
     _todoContext.TodoRepository.Add(todo);
+    return RedirectToAction(nameof(Index));
+}
+```
+
+`Edit`（POST）多一個「路由 id 跟表單 id 是否一致」的檢查，一樣獨立一行：
+
+```csharp
+public IActionResult Edit(int id, [Bind("Id,Title,IsDone")] Todo todo = null)
+{
+    #region Contracts
+
+    ArgumentNullException.ThrowIfNull(todo);
+    if (id != todo.Id) return View(todo);
+    if (ModelState.IsValid == false) return View(todo);
+
+    #endregion
+
+    _todoContext.TodoRepository.Update(todo);
     return RedirectToAction(nameof(Index));
 }
 ```
@@ -331,7 +353,7 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 ```
 
 - 參照型別（`string`、`Todo` 這類 class）**不要加 `?`**（例如寫
-  `Todo GetById(int id)`、`Todo todo = null`，不要寫 `Todo? GetById(...)`）。
+  `Todo FindById(int id)`、`Todo todo = null`，不要寫 `Todo? FindById(...)`）。
   Nullable 功能關掉之後，這種標註不會被編譯器檢查，加了反而會產生
   `CS8632` 警告（「可為 Null 的參考型別註釋應只用於 nullable 註釋內容中」）。
 - 值型別要表示「可能沒有值」，還是可以用 `?`（例如 `int?`），這是 C# 原生的
@@ -357,28 +379,28 @@ bool Remove(int id);
 
 Todo GetByXX(int id);
 
-IReadOnlyList<Todo> GetAll();
+IReadOnlyList<Todo> FindAll();
 
-IReadOnlyList<Todo> GetAllByXX();
+IReadOnlyList<Todo> FindAllByXX();
 ```
 
 - 順序固定是：新增 → 修改 → 刪除 → 查單筆 → 查全部 → 查全部（有條件）。
 - **刪除方法一律叫 `Remove`，不叫 `Delete`。**
 - **查詢方法的命名規則**：
-  - 只有 `Get` 開頭（例如 `GetById`）：代表查詢**單筆**，回傳型別是 `Todo`
+  - 只有 `Find` 開頭（例如 `FindById`）：代表查詢**單筆**，回傳型別是 `Todo`
     （或 `Todo` 為 null，代表查無資料）。
-  - `GetAll` 開頭（例如 `GetAll`、`GetAllByCategory`）：代表查詢**多筆**，
+  - `FindAll` 開頭（例如 `FindAll`、`FindAllByCategory`）：代表查詢**多筆**，
     回傳型別是 `IReadOnlyList<Todo>`。
 - **Repository 只放存取資料的方法（CRUD＋查詢），不放業務邏輯／狀態轉換的
   方法**（例如「切換完成狀態」這種操作）。這類邏輯屬於 Entity 自己的行為，
   規則見第 12 節「充血模型」，不會出現在 Repository 裡。
 
-目前 `ITodoRepository` 的實際順序：`Add` → `Update` → `Remove` → `GetById`
-→ `GetAll`，完全符合上面的固定模式，沒有額外的自訂操作。
+目前 `ITodoRepository` 的實際順序：`Add` → `Update` → `Remove` → `FindById`
+→ `FindAll`，完全符合上面的固定模式，沒有額外的自訂操作。
 
 **為什麼這樣做：** 固定的方法順序跟命名規則，讓打開任何一個 Repository
 介面都能立刻找到「新增在哪裡、查詢在哪裡」，不用每個介面重新適應排列方式；
-`Get` 跟 `GetAll` 的字首差異也讓呼叫端不用看回傳型別就知道這個方法查的是
+`Find` 跟 `FindAll` 的字首差異也讓呼叫端不用看回傳型別就知道這個方法查的是
 單筆還是多筆。
 
 ## 12. 充血模型（Rich Domain Model）慣例
@@ -399,7 +421,7 @@ public class Todo
     // Methods
     public void ToggleDone()
     {
-        IsDone = !IsDone;
+        this.IsDone = !this.IsDone;
     }
 }
 ```
@@ -411,7 +433,7 @@ public class Todo
 ```csharp
 public IActionResult Toggle(int id)
 {
-    var todo = _todoContext.TodoRepository.GetById(id);
+    var todo = _todoContext.TodoRepository.FindById(id);
     if (todo is null)
     {
         return NotFound();
@@ -419,6 +441,8 @@ public IActionResult Toggle(int id)
 
     todo.ToggleDone();
     _todoContext.TodoRepository.Update(todo);
+
+    // Return
     return RedirectToAction(nameof(Index));
 }
 ```
@@ -428,3 +452,234 @@ public IActionResult Toggle(int id)
 用不同方式實作兩三次）。邏輯跟著資料放在一起，之後不管從 Controller、
 Console 工具、還是測試呼叫 `Todo.ToggleDone()`，規則都保證一致，
 Repository 也能維持單純的存取角色，不會越長越肥。
+
+## 13. `// Default` 與 `// Return` 註解慣例
+
+### 建構子：`// Default`
+
+建構子裡「把參數存進欄位」的賦值陳述式，前面加上 `// Default` 註解
+（跟前面的 `#region Contracts` 之間空一行，`// Default` 本身跟賦值陳述式
+之間不空行）：
+
+```csharp
+public TodoContext(ITodoRepository todoRepository)
+{
+    #region Contracts
+
+    ArgumentNullException.ThrowIfNull(todoRepository);
+
+    #endregion
+
+    // Default
+    _todoRepository = todoRepository;
+}
+```
+
+### 方法：`// Return`
+
+方法裡代表「正常結果」的最後一個 `return`，前面加上 `// Return` 註解；
+如果前面有其他邏輯，空一行再接 `// Return`，沒有的話（`// Return` 是
+方法本體第一行）就不用空行。
+
+**例外：屬性的 `get` 如果整個只有一行（就只有那個 `return`），不加
+`// Return`，而且整個 `get` 縮成一行寫**，比展開成三行好讀：
+
+```csharp
+public ITodoRepository TodoRepository
+{
+    get { return _todoRepository; }
+}
+```
+
+**提前結束的 guard clause 式 `return`（例如 `if (todo is null) return NotFound();`
+這種）不用加 `// Return`**——不管它是不是在 `#region Contracts` 裡面，
+這種 return 已經由前面的 `if` 條件自我解釋，只有「這個方法真正要交付的
+結果」才需要標註：
+
+```csharp
+public IActionResult Edit(int id)
+{
+    var todo = _todoContext.TodoRepository.FindById(id);
+    if (todo is null)
+    {
+        return NotFound();
+    }
+
+    // Return
+    return View(todo);
+}
+```
+
+一個方法如果有多個「正常結果」的 return（例如 `MockTodoRepository.Update`
+先判斷「找不到就回傳 false」是提前結束、不標，最後「更新成功回傳 true」
+才是正常結果、要標）：
+
+```csharp
+public bool Update(Todo todo)
+{
+    #region Contracts
+
+    ArgumentNullException.ThrowIfNull(todo);
+
+    #endregion
+
+    lock (_lock)
+    {
+        var existing = _todos.FirstOrDefault(t => t.Id == todo.Id);
+        if (existing is null)
+        {
+            return false;
+        }
+
+        existing.Title = todo.Title;
+        existing.IsDone = todo.IsDone;
+
+        // Return
+        return true;
+    }
+}
+```
+
+**為什麼這樣做：** `// Default` 讓建構子一眼就能分出「合約檢查」跟
+「真正做的事（存欄位）」兩個階段；`// Return` 讓方法裡「這是提前擋掉的
+特殊情況」跟「這是正常要交付的結果」清楚分開，不用逐行讀邏輯才能找到
+真正的輸出在哪裡。
+
+## 14. `!` 取反運算子：邏輯判斷不要用，翻轉布林值可以用
+
+**判斷式／布林運算式（用來做決策、回答「是不是」的地方）不要用 `!`**，
+改用 `== false` / `== true` 明確寫出來；**單純翻轉一個布林值本身的狀態
+（不是在做判斷）可以用 `!`**：
+
+| 情境 | 寫法 | 範例 |
+|---|---|---|
+| 判斷式（邏輯判斷） | 用 `== false` / `== true` | `if (this.ModelState.IsValid == false)` |
+| 布林運算式（回答「是不是」） | 用 `== false` / `== true` | `return string.IsNullOrEmpty(this.RequestId) == false;` |
+| 賦值（單純翻轉狀態，不是判斷） | 可以用 `!` | `this.IsDone = !this.IsDone;` |
+
+目前套用的地方：判斷式／布林運算式——`Program.cs` 的
+`app.Environment.IsDevelopment()` 判斷、`ErrorViewModel.ShowRequestId`、
+第 9 節 `#region Contracts` 裡所有布林判斷；翻轉布林值——
+`Todo.ToggleDone()`。
+
+**為什麼這樣做：** 判斷式的 `!` 容易被忽略，誤讀整段邏輯的方向（尤其
+跟方法呼叫連在一起時，例如 `!string.IsNullOrEmpty(x)` 很容易漏看那個
+`!`），所以判斷一律用 `== false` / `== true` 讓意圖攤開來看。但單純翻轉
+一個布林值（例如切換開關狀態）不是「判斷」、沒有邏輯方向要辨認，`!this.IsDone`
+比 `this.IsDone == false` 更直接表達「變成相反的值」這個意圖，這種情境可以用
+`!`。
+
+## 15. 呼叫自己的方法或屬性要加 `this.`
+
+**在類別內部呼叫自己（包含繼承來的）方法或屬性，一律加上 `this.` 前綴**：
+
+```csharp
+// Todo 自己的 IsDone 屬性
+public void ToggleDone()
+{
+    this.IsDone = !this.IsDone;
+}
+```
+
+- **欄位不用加 `this.`**——欄位已經用 `_` 前綴跟參數/區域變數區分開來
+  （見第 7 節），不會混淆，加了反而累贅。
+- **區域變數、方法參數不加 `this.`**（它們本來就不是類別成員）。
+- **`nameof(...)` 裡面不用加 `this.`**（例如 `nameof(Index)`，這是編譯期
+  取名稱字串，不是真的呼叫）。
+- **例外：Controller 裡 `return` 直接呼叫方法時不加 `this.`**（例如
+  `return View(todo);`、`return RedirectToAction(...)`、`return NotFound();`），
+  這種 `return` 後面直接接的方法呼叫太常見、太醒目，加 `this.` 反而是
+  雜訊。但 `return` 陳述式裡面**不是**直接呼叫的部分（例如條件式裡的
+  `this.ModelState.IsValid`），還是要照第 15 節的規則加 `this.`：
+
+```csharp
+// TodosController
+public IActionResult Create([Bind("Title")] Todo todo = null)
+{
+    #region Contracts
+
+    ArgumentNullException.ThrowIfNull(todo);
+    if (this.ModelState.IsValid == false) return View(todo);
+
+    #endregion
+
+    _todoContext.TodoRepository.Add(todo);
+
+    // Return
+    return RedirectToAction(nameof(Index));
+}
+```
+
+目前套用的地方：`TodosController` / `HomeController` 裡的 `this.ModelState`、
+`this.HttpContext`（都不是 return 直接呼叫的方法，維持加 `this.`）；
+`Todo.ToggleDone()` 裡的 `IsDone`；`ErrorViewModel.ShowRequestId` 裡的
+`RequestId`。
+
+**為什麼這樣做：** 一看到 `this.` 就知道這是類別自己的成員（不管是自己
+定義的還是繼承來的），跟區域變數、參數、外部物件的成員一眼區分開來，
+不用回頭確認這個識別字到底是從哪裡來的。
+
+## 16. 方法內部的小區塊標籤
+
+**方法本體如果可以拆成好幾個邏輯步驟，每個步驟前面加一個單字的小註解**，
+講清楚這個步驟在做什麼（通常跟一個動詞或操作名稱對應，例如
+`FindById`、`Add`、`Update`、`Remove`）。跟 `// Contracts`、`// Default`、
+`// Return` 同一套排版：第一個標籤前面不空行，後面每個標籤前面空一行。
+
+範例（`MockTodoRepository.Update`）：
+
+```csharp
+public bool Update(Todo todo)
+{
+    #region Contracts
+
+    ArgumentNullException.ThrowIfNull(todo);
+
+    #endregion
+
+    lock (_lock)
+    {
+        // FindById
+        var existing = _todos.FirstOrDefault(t => t.Id == todo.Id);
+        if (existing is null)
+        {
+            return false;
+        }
+
+        // Update
+        existing.Title = todo.Title;
+        existing.IsDone = todo.IsDone;
+
+        // Return
+        return true;
+    }
+}
+```
+
+範例（`TodosController.Toggle`，步驟橫跨查詢、切換、儲存三個階段）：
+
+```csharp
+public IActionResult Toggle(int id)
+{
+    // FindById
+    var todo = _todoContext.TodoRepository.FindById(id);
+    if (todo is null)
+    {
+        return NotFound();
+    }
+
+    // ToggleDone
+    todo.ToggleDone();
+    _todoContext.TodoRepository.Update(todo);
+
+    // Return
+    return RedirectToAction(nameof(Index));
+}
+```
+
+只有一個步驟的方法（例如 `FindById`、`FindAll` 這種本體就是單一個 `return`）
+不需要額外標籤，`// Return` 本身就足夠說明。
+
+**為什麼這樣做：** 方法一長，光看程式碼要花時間才能分辨「這幾行在做
+同一件事、還是已經換到下一步了」；一個單字標籤讓步驟邊界一眼可辨，
+掃過標籤就能知道整個方法的流程，不用逐行讀。

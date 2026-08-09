@@ -1,6 +1,4 @@
-// Imports
 using System.ComponentModel.DataAnnotations;
-
 
 namespace CLK.Todos
 {
@@ -21,7 +19,7 @@ namespace CLK.Todos
         // Methods
         public void ToggleDone()
         {
-            IsDone = !IsDone;
+            this.IsDone = !this.IsDone;
         }
     }
 }
