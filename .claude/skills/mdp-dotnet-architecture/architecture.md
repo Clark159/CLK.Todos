@@ -584,7 +584,7 @@ Repository 實作全部走 Singleton，所以改成建構子注入 `IDbContextFa
   不能只靠 Controller 的 `ModelState.IsValid` 裸檢查，也不用自己在 Entity
   方法或 Controller 裡手寫等價的 if 判斷。
 - `ErrorMessage` 一律用「參數驗證」角度撰寫：陳述「這個屬性違反了什麼
-  規則」（`{屬性} 不可以為空白`、`{屬性} 長度不可超過 N 字`），不要用引導使用者
+  規則」（`不可以為空白`、`長度不可超過 N 字`），不要用引導使用者
   操作的祈使句（不要 `請輸入 XXX`）。跟 Method／Constructor `// Contracts`
   的合約檢查（`ArgumentException` 系列）用同一種語氣，全專案「合約違規」
   一律陳述規則本身，不指示下一步動作。
@@ -610,9 +610,9 @@ public class Todo
 ```csharp
 public class User
 {
-    [Required(ErrorMessage = "Email 不可為空")]
-    [EmailAddress(ErrorMessage = "Email 格式不正確")]
-    [StringLength(100, ErrorMessage = "Email 長度不可超過 100 字")]
+    [Required(ErrorMessage = "不可以為空白")]
+    [EmailAddress(ErrorMessage = "格式不正確")]
+    [StringLength(100, ErrorMessage = "長度不可超過 100 字")]
     public string Email { get; set; } = string.Empty;
 }
 ```
