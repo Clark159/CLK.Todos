@@ -699,7 +699,7 @@ Domain／Access 兩層都不持有跟單一 HTTP 請求綁定的狀態——Repo
 
 當使用者要求「把 architecture.md 轉換／翻譯成 SKILL.md」時，依下列規則
 重新生成同資料夾的 `SKILL.md`（每次都整份重寫，不做局部修補、不留舊
-內容）：
+內容）。並且在SKILL.md內容裡面加入，檔案建立的日期時間。
 
 **規則**
 

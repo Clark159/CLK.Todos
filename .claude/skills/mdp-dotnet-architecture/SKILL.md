@@ -2,6 +2,8 @@
 name: mdp-dotnet-architecture
 description: .NET 專案通用設計規範（目錄分層、Namespace、Class 成員排序、Constructor/Method 慣例、Context／Repository／Entity／DI 規則）。撰寫或修改任何 .NET 專案的 .cs 檔案（含 Domain／Access／Host 層）前必讀，確保產出符合本規範。
 user-invocable: true
+metadata:
+  created: "2026-09-05 22:08:10 +0800"
 ---
 
 # .NET 設計規範（AI 執行版）
@@ -18,12 +20,12 @@ user-invocable: true
 
 ## 01. Workspace
 
-- `src/`：所有原始碼專案放這裡，`.sln` 跟所有專案同一層，不放 repo 根目
-  錄；測試專案放 `tests/`，跟 `src/` 同一層。
-- 一個 `.sln` 可以包含多個 `{Domain}`（多個 Bounded Context）：`.sln` 檔名
-  對應 repo 本身，不綁定任何一個 `{Domain}`。
+- `src/`：所有原始碼專案放這裡。
 - `docs/`：架構規則、設計文件這類跟程式碼相關但不參與建置的文件放這裡。
-- `README.md`、`.gitignore` 放 repo 根目錄。
+- `tests/`：測試專案放這裡，跟 `src/` 同一層。
+- `README.md`：專案說明，放 repo 根目錄。
+- `LICENSE`：授權條款，放 repo 根目錄。
+- `.gitignore`：Git 版本控制排除清單，放 repo 根目錄。
 - repo 根目錄只留上述這類跟建置無關的東西，不放任何 `.sln`／專案檔案。
 
 ## 02. Architecture（分層）
@@ -41,8 +43,9 @@ user-invocable: true
   相依 Domain 層＋Access 層。
 - 同一個 `{Domain}` 可以同時有多個 Host 層專案，都依賴同一個
   `{Domain}.Accesses`／`{Domain}`。
-- 一個 `.sln` 可以同時有多組 `{Domain}`／`{Domain}.Accesses`／Host 層專
-  案，各組 `{Domain}` 之間彼此獨立、不共用 Repository 介面或 Context。
+- `.sln` 檔名對應 repo，跟所有專案同一層，不放 repo 根目錄。
+- `.sln` 可以包含多組 `{Domain}`／`{Domain}.Accesses`／Host 層專案；各組
+  `{Domain}` 之間彼此獨立、不共用 Repository 介面或 Context。
 
 ## 03. Namespace
 
@@ -287,6 +290,11 @@ public class {Entity}
 
 ## 自我檢查清單（寫完程式碼後逐條核對）
 
+- [ ] repo 根目錄只有 `src/`／`docs/`／`tests/`／`README.md`／`LICENSE`／
+      `.gitignore` 這類跟建置無關的東西，`.sln`／專案檔案都在 `src/`
+      裡（§1）。
+- [ ] `.sln` 跟所有專案同一層，各組 `{Domain}` 之間彼此獨立、不共用
+      Repository 介面或 Context（§2）。
 - [ ] Namespace file-scoped，且等於專案名稱（§3）。
 - [ ] 類別成員分類順序、空行規則正確；不必要的 `this.` 都拿掉（§4）。
 - [ ] 欄位／參數／屬性命名鏈（`I{X}` → `{x}` 參數 → `_{x}` 欄位 →
