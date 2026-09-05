@@ -92,7 +92,7 @@ public interface ITodoRepository
 - **Entity**：例如 `Todo.cs`。
 - **Repository 介面**：只放介面，**不放實作**——實作屬於基礎設施細節，見第 4 節。
   - 命名一律 `I{Entity}Repository`（例如 `ITodoRepository`）。
-  - 方法命名與排序規則見第 11 節，不要洩漏儲存細節（例如不要叫 `SelectFromDb`）。
+  - 方法命名與排序規則見第 10 節，不要洩漏儲存細節（例如不要叫 `SelectFromDb`）。
 - **`{Solution}Context`（例如 `TodoContext`）是 Domain 的入口物件**。
   - 所有 Repository 介面都透過建構子注入到 Context 裡，並用唯讀屬性對外提供
     （屬性命名規則見第 7 節，寫法用 `get` / `return`，不用 `=>`，見第 8 節）。
@@ -270,7 +270,7 @@ public class TodoContext
 ## 9. 合約檢查（Guard Clause）慣例
 
 **建構子或方法的參數，一律在方法本體最前面做基本合約檢查**，並且用
-`// Contracts` 標籤（跟第 15 節「方法內部的小區塊標籤」同一套排版），
+`// Contracts` 標籤（跟第 14 節「方法內部的小區塊標籤」同一套排版），
 跟後面的邏輯空一行：
 
 - **參照型別（物件）參數**：不能為 `null`，用 `ArgumentNullException.ThrowIfNull(參數)`。
@@ -289,7 +289,7 @@ public class TodoContext
   提前 return」的單一陳述式判斷都比照辦理**（例如 `// Search` 步驟裡
   查無資料就回傳的判斷）。
 
-`// Contracts` 的格式：**標籤緊接著第一個檢查、不空行**（跟第 15 節的
+`// Contracts` 的格式：**標籤緊接著第一個檢查、不空行**（跟第 14 節的
 標籤規則一致）；如果檢查內容不只一行，**內容彼此之間也不空行**（緊貼在
 一起）；檢查結束後，跟後面的邏輯空一行：
 
@@ -357,38 +357,11 @@ public IActionResult Edit(Guid todoId, [Bind("TodoId,Title,IsDone")] Todo todo =
 ```
 
 **為什麼這樣做：** `// Contracts` 標籤讓「這個方法對輸入的基本要求是什麼」
-從外觀就能一眼認出來，不會跟後面真正的商業邏輯混在一起看；跟第 15 節的
+從外觀就能一眼認出來，不會跟後面真正的商業邏輯混在一起看；跟第 14 節的
 其他步驟標籤是同一套視覺語言，不用另外學一種排版，也不必靠 `#region`
 摺疊/展開才能看清楚檢查內容。
 
-## 10. 不使用 Nullable 參考型別（Nullable Reference Types）
-
-所有專案的 `.csproj` 一律設定 `<Nullable>disable</Nullable>`（不是預設範本的
-`enable`）：
-
-```xml
-<PropertyGroup>
-  <TargetFramework>net9.0</TargetFramework>
-  <Nullable>disable</Nullable>
-  ...
-</PropertyGroup>
-```
-
-- 參照型別（`string`、`Todo` 這類 class）**不要加 `?`**（例如寫
-  `Todo FindById(Guid todoId)`、`Todo todo = null`，不要寫 `Todo? FindById(...)`）。
-  Nullable 功能關掉之後，這種標註不會被編譯器檢查，加了反而會產生
-  `CS8632` 警告（「可為 Null 的參考型別註釋應只用於 nullable 註釋內容中」）。
-- 值型別要表示「可能沒有值」，還是可以用 `?`（例如 `int?`），這是 C# 原生的
-  `Nullable<T>`，跟參考型別的 Nullable 註釋是兩回事，不受這條規則影響。
-- 「一個參照型別的值到底會不會是 null」改用第 9 節的合約檢查慣例
-  （`ArgumentNullException.ThrowIfNull`／可為 null 的參數給預設值 `null`
-  並自己判斷 `is null`）在**執行期**把關，不依賴編譯器的靜態 Nullable 分析。
-
-**為什麼這樣做：** 統一用 guard clause／執行期判斷來表達「這裡可不可以是
-null」，不同時疊加編譯器的 Nullable 靜態分析，避免兩套機制互相打架（例如
-關掉 Nullable 後，舊的 `?` 標註反而變成警告來源）。
-
-## 11. Repository 方法命名與排序慣例
+## 10. Repository 方法命名與排序慣例
 
 Repository 介面（跟它的實作）裡的方法，**一律照以下順序排列**：
 
@@ -415,7 +388,7 @@ IReadOnlyList<Todo> FindAllByXX();
     回傳型別是 `IReadOnlyList<Todo>`。
 - **Repository 只放存取資料的方法（CRUD＋查詢），不放業務邏輯／狀態轉換的
   方法**（例如「切換完成狀態」這種操作）。這類邏輯屬於 Entity 自己的行為，
-  規則見第 12 節「充血模型」，不會出現在 Repository 裡。
+  規則見第 11 節「充血模型」，不會出現在 Repository 裡。
 
 目前 `ITodoRepository` 的實際順序：`Add` → `Update` → `Remove` → `FindById`
 → `FindAll`，完全符合上面的固定模式，沒有額外的自訂操作。
@@ -425,10 +398,10 @@ IReadOnlyList<Todo> FindAllByXX();
 `Find` 跟 `FindAll` 的字首差異也讓呼叫端不用看回傳型別就知道這個方法查的是
 單筆還是多筆。
 
-## 12. 充血模型（Rich Domain Model）慣例
+## 11. 充血模型（Rich Domain Model）慣例
 
 **跟 Entity 自身狀態有關的業務邏輯，寫成 Entity 上的方法，不要寫在
-Repository 或 Controller 裡。** Repository 只負責存取資料（見第 11 節），
+Repository 或 Controller 裡。** Repository 只負責存取資料（見第 10 節），
 不承載任何業務規則；「資料要怎麼變化」的邏輯屬於資料自己。
 
 範例：切換完成狀態的邏輯在 `Todo` 類別上：
@@ -472,7 +445,7 @@ public IActionResult Toggle(Guid todoId)
 Console 工具、還是測試呼叫 `Todo.ToggleDone()`，規則都保證一致，
 Repository 也能維持單純的存取角色，不會越長越肥。
 
-## 13. `// Default` 與 `// Return` 註解慣例
+## 12. `// Default` 與 `// Return` 註解慣例
 
 ### 建構子：`// Default`
 
@@ -515,7 +488,7 @@ public ITodoRepository TodoRepository
 ```csharp
 public IActionResult Edit(Guid todoId)
 {
-    // FindById
+    // Search
     var todo = _todoContext.TodoRepository.FindById(todoId);
     if (todo is null) return NotFound();
 
@@ -553,7 +526,7 @@ public bool Update(Todo todo)
 特殊情況」跟「這是正常要交付的結果」清楚分開，不用逐行讀邏輯才能找到
 真正的輸出在哪裡。
 
-## 14. 呼叫自己的方法或屬性不加 `this.`
+## 13. 呼叫自己的方法或屬性不加 `this.`
 
 **在類別內部呼叫自己（包含繼承來的）方法或屬性，一律不加 `this.` 前綴**：
 
@@ -597,7 +570,7 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 「這是自己的成員」；省略之後每一行都少一截視覺雜訊，看程式碼的人一樣能
 從命名（`_` 前綴 vs. 沒有前綴）判斷出處，不需要額外的前綴當提示。
 
-## 15. 方法內部的小區塊標籤
+## 14. 方法內部的小區塊標籤
 
 **方法本體避免寫太深的巢狀，盡量拆成一個個平鋪的區塊**，每個區塊前面
 加一個單字的小註解講清楚這個區塊在做什麼——**註解只是提示這個區塊的
@@ -613,9 +586,9 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 | `// Contracts` | 方法／建構子最前面的參數合約檢查（見第 9 節） | 有 |
 | `// Variables` | 宣告本地變數（還沒賦值、純宣告用途的區塊） | 尚無，先保留 |
 | `// Initialize` | 初始化一個物件或集合的起始狀態 | 尚無，先保留 |
-| `// Default` | 建構子裡「把參數存進欄位」的預設賦值（見第 13 節） | 有 |
+| `// Default` | 建構子裡「把參數存進欄位」的預設賦值（見第 12 節） | 有 |
 | `// Define` | 定義／組出一個新的物件或值 | 尚無，先保留 |
-| `// Return` | 方法裡代表「正常結果」的最後一個 `return`（見第 13 節） | 有 |
+| `// Return` | 方法裡代表「正常結果」的最後一個 `return`（見第 12 節） | 有 |
 | `// Require` | 方法本體中途（不是開頭參數）冒出的額外前置要求 | 尚無，先保留 |
 | `// Arguments` | 呼叫下一個方法前，組裝要傳入的引數 | 尚無，先保留 |
 | `// Notify` | 發出通知（例如記錄 log、觸發事件通知） | 尚無，先保留 |
@@ -683,7 +656,7 @@ public IActionResult Toggle(Guid todoId)
 `if`／`else`／迴圈疊在一起）光看縮排就很難分辨區塊邊界，盡量用提前
 `return`（見第 9 節）把邏輯攤平成一層層平鋪的區塊，標籤才有意義。
 
-## 16. Entity 主鍵：命名 `{Entity}Id`、優先使用 GUIDv7
+## 15. Entity 主鍵：命名 `{Entity}Id`、優先使用 GUIDv7
 
 **Entity 的主鍵屬性一律命名 `{Entity}Id`，不要用單純的 `Id`**（例如
 `Todo` 的主鍵是 `TodoId`，不是 `Id`）；型別優先用 `Guid`，並且用
@@ -732,7 +705,7 @@ id 屬於哪個 Entity，不用回頭看是哪張表／哪個型別；`int` 流�
 下一個號碼是多少，同時前 48 bit 是時間戳，天生照建立時間排序，比純隨機
 的 v4 更適合當資料庫索引鍵、也比 `int` 更難被外部猜測、列舉。
 
-## 17. Entity 稽核時間戳記：`CreateTime` 與 `UpdateTime`
+## 16. Entity 稽核時間戳記：`CreateTime` 與 `UpdateTime`
 
 **Entity 記錄建立時間的屬性一律叫 `CreateTime`（不是 `CreatedAt`），
 更新時間叫 `UpdateTime`**，兩者都是 `DateTime`，**一律存 UTC**，預設值
@@ -749,7 +722,7 @@ public class Todo
 ```
 
 - **`Add`（新增）**：`CreateTime`／`UpdateTime` 都在 Repository 的 `Add`
-  方法寫入當下重新蓋上 `DateTime.UtcNow`（見第 15 節 `MockTodoRepository.Add`
+  方法寫入當下重新蓋上 `DateTime.UtcNow`（見第 14 節 `MockTodoRepository.Add`
   的 `// Execute` 區塊）——不信任 Entity 建構當下的屬性預設值（物件從
   建構到真正寫入之間可能經過表單繫結、驗證等時間差），一律以「實際寫入
   的當下」為準重新蓋一次。
@@ -775,7 +748,7 @@ public class Todo
 
 **為什麼這樣做：** `CreateTime`／`UpdateTime` 一組對稱命名，比
 `CreatedAt` 這種只顧建立、沒有對應更新時間的命名更完整；蓋時間戳記的
-責任統一放在 Repository 的 `Add`／`Update` 方法（跟第 11 節「Repository
+責任統一放在 Repository 的 `Add`／`Update` 方法（跟第 10 節「Repository
 只放存取資料的方法」一致——這是持久化當下的稽核動作，不是 Entity 自身的
 業務邏輯），不用每個呼叫端（Controller、Entity 方法）各自記得要蓋時間
 戳記，只要走過 `Add`／`Update` 就保證正確；`Update` 不動 `CreateTime`

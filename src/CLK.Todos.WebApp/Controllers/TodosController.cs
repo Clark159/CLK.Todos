@@ -41,7 +41,7 @@ public class TodosController : Controller
     // POST: /Todos/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Create([Bind("Title")] Todo todo = null)
+    public IActionResult Create([Bind("Title")] Todo? todo = null)
     {
         // Contracts
         ArgumentNullException.ThrowIfNull(todo);
@@ -68,7 +68,7 @@ public class TodosController : Controller
     // POST: /Todos/Edit/{todoId}
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Edit(Guid todoId, [Bind("TodoId,Title,IsDone")] Todo todo = null)
+    public IActionResult Edit(Guid todoId, [Bind("TodoId,Title,IsDone")] Todo? todo = null)
     {
         // Contracts
         ArgumentNullException.ThrowIfNull(todo);

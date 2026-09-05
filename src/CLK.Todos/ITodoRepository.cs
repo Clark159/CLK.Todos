@@ -9,7 +9,7 @@ public interface ITodoRepository
 
     bool Remove(Guid todoId);
 
-    Todo FindById(Guid todoId);
+    Todo? FindById(Guid todoId);
 
     IReadOnlyList<Todo> FindAll();
 }

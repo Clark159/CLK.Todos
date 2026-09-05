@@ -68,7 +68,7 @@ public class MockTodoRepository : ITodoRepository
         }
     }
 
-    public Todo FindById(Guid todoId)
+    public Todo? FindById(Guid todoId)
     {
         // Lock
         lock (_lock)
