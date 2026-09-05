@@ -169,7 +169,10 @@ public class TodoContext
         _todoRepository = todoRepository;
     }
 
-    public ITodoRepository TodoRepository => _todoRepository;
+    public ITodoRepository TodoRepository
+    {
+        get { return _todoRepository; }
+    }
 }
 ```
 
@@ -309,7 +312,10 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
     ArgumentNullException.ThrowIfNull(todo);
     if (ModelState.IsValid == false) return View(todo);
 
+    // Execute
     _todoContext.TodoRepository.Add(todo);
+
+    // Result
     return RedirectToAction(nameof(Index));
 }
 ```
@@ -317,14 +323,17 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 `Edit`（POST）多一個「路由 id 跟表單 id 是否一致」的檢查，一樣獨立一行：
 
 ```csharp
-public IActionResult Edit(int id, [Bind("Id,Title,IsDone")] Todo todo = null)
+public IActionResult Edit(Guid id, [Bind("Id,Title,IsDone")] Todo todo = null)
 {
     // Contracts
     ArgumentNullException.ThrowIfNull(todo);
     if (id != todo.Id) return View(todo);
     if (ModelState.IsValid == false) return View(todo);
 
+    // Execute
     _todoContext.TodoRepository.Update(todo);
+
+    // Result
     return RedirectToAction(nameof(Index));
 }
 ```
@@ -348,7 +357,7 @@ public IActionResult Edit(int id, [Bind("Id,Title,IsDone")] Todo todo = null)
 ```
 
 - 參照型別（`string`、`Todo` 這類 class）**不要加 `?`**（例如寫
-  `Todo FindById(int id)`、`Todo todo = null`，不要寫 `Todo? FindById(...)`）。
+  `Todo FindById(Guid id)`、`Todo todo = null`，不要寫 `Todo? FindById(...)`）。
   Nullable 功能關掉之後，這種標註不會被編譯器檢查，加了反而會產生
   `CS8632` 警告（「可為 Null 的參考型別註釋應只用於 nullable 註釋內容中」）。
 - 值型別要表示「可能沒有值」，還是可以用 `?`（例如 `int?`），這是 C# 原生的
@@ -370,9 +379,9 @@ Todo Add(Todo todo);
 
 bool Update(Todo todo);
 
-bool Remove(int id);
+bool Remove(Guid id);
 
-Todo GetByXX(int id);
+Todo FindByXX(Guid id);
 
 IReadOnlyList<Todo> FindAll();
 
@@ -423,10 +432,10 @@ public class Todo
 
 **呼叫端的標準流程**：先用 Repository 查出 Entity，呼叫 Entity 上的方法
 改變狀態，再用 Repository 存回去——**不要**在 Repository 上開一個
-`ToggleDone(int id)` 這種直接用 id 操作、把邏輯藏在 Repository 裡的方法：
+`ToggleDone(Guid id)` 這種直接用 id 操作、把邏輯藏在 Repository 裡的方法：
 
 ```csharp
-public IActionResult Toggle(int id)
+public IActionResult Toggle(Guid id)
 {
     var todo = _todoContext.TodoRepository.FindById(id);
     if (todo is null) return NotFound();
@@ -486,7 +495,7 @@ public ITodoRepository TodoRepository
 結果」才需要標註：
 
 ```csharp
-public IActionResult Edit(int id)
+public IActionResult Edit(Guid id)
 {
     var todo = _todoContext.TodoRepository.FindById(id);
     if (todo is null) return NotFound();
@@ -655,7 +664,7 @@ public bool Update(Todo todo)
 切換狀態＋存回去算同一個「執行」區塊）：
 
 ```csharp
-public IActionResult Toggle(int id)
+public IActionResult Toggle(Guid id)
 {
     // Search
     var todo = _todoContext.TodoRepository.FindById(id);
