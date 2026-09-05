@@ -397,17 +397,44 @@ public IActionResult Create([Bind("Title")] Todo? todo = null)
 
 **範例**
 
-- `{Domain}` 只有一個 Entity 時的巧合命名（本專案：CLK.Todos 目前只有
-  `Todo` 一個 `{Domain}`，`{Domain}` 新增 `Category` Entity 時，是在
-  `TodoContext` 上多加一個 `ICategoryRepository` 屬性，不是另外開一個
-  `CategoryContext`；`TodoContext` 剛好跟 `{Entity}Context` 同名只是巧合，
-  不代表 Context 是跟著 Entity 命名的）
+- `TodoContext`：把 `ITodoRepository` 透過建構子注入進來，用唯讀屬性對外
+  提供
+
+```csharp
+public class TodoContext
+{
+    // Fields
+    private readonly ITodoRepository _todoRepository;
+
+
+    // Constructors
+    public TodoContext(ITodoRepository todoRepository)
+    {
+        // Contracts
+        ArgumentNullException.ThrowIfNull(todoRepository);
+
+        // Default
+        _todoRepository = todoRepository;
+    }
+
+
+    // Properties
+    public ITodoRepository TodoRepository
+    {
+        get { return _todoRepository; }
+    }
+}
+```
 
 **說明**
 
 單一入口物件集中所有 Repository，呼叫端只需注入一個依賴；Context 的數量
 跟著 `{Domain}` 走，不跟著 Entity 走，避免 Entity 一多就要到處新增、注入
-一堆 Context。
+一堆 Context。本專案：CLK.Todos 目前只有 `Todo` 一個 `{Domain}`，`{Domain}`
+新增 `Category` Entity 時，是在 `TodoContext` 上多加一個
+`ICategoryRepository` 屬性，不是另外開一個 `CategoryContext`；
+`TodoContext` 剛好跟 `{Entity}Context` 同名只是巧合，不代表 Context 是
+跟著 Entity 命名的。
 
 ## 10. Repository 設計規則
 
