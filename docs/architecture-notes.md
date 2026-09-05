@@ -567,6 +567,16 @@ Repository 實作全部走 Singleton，所以改成建構子注入 `IDbContextFa
   寫成 Entity 上的方法，不要寫在 Repository 或 Controller 裡。
 - 呼叫端標準流程：Repository 查出 Entity → 呼叫 Entity 方法改變狀態 →
   Repository 存回去。
+- 業務欄位（非主鍵、非稽核時間戳記）一律用
+  `System.ComponentModel.DataAnnotations` 屬性保護輸入合法性，依型別與
+  業務規則挑選（例如 `[Required]`、`[StringLength]`、`[EmailAddress]`），
+  不能只靠 Controller 的 `ModelState.IsValid` 裸檢查，也不用自己在 Entity
+  方法或 Controller 裡手寫等價的 if 判斷。
+- `ErrorMessage` 一律用「參數驗證」角度撰寫：陳述「這個屬性違反了什麼
+  規則」（`{屬性} 不可為空`、`{屬性} 長度不可超過 N 字`），不要用引導使用者
+  操作的祈使句（不要 `請輸入 XXX`）。跟 Method／Constructor `// Contracts`
+  的合約檢查（`ArgumentException` 系列）用同一種語氣，全專案「合約違規」
+  一律陳述規則本身，不指示下一步動作。
 
 **範例**
 
@@ -580,6 +590,19 @@ public class Todo
     public DateTime CreateTime { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdateTime { get; set; } = DateTime.UtcNow;
+}
+```
+
+- DataAnnotations 保護業務欄位（本專案：`User.Email`），`ErrorMessage`
+  陳述違反的規則，不指示使用者動作
+
+```csharp
+public class User
+{
+    [Required(ErrorMessage = "Email 不可為空")]
+    [EmailAddress(ErrorMessage = "Email 格式不正確")]
+    [StringLength(100, ErrorMessage = "Email 長度不可超過 100 字")]
+    public string Email { get; set; } = string.Empty;
 }
 ```
 
@@ -620,6 +643,14 @@ public IActionResult Toggle(Guid todoId)
 散落在 Service／Controller／Repository 各處，同一規則被實作兩三次）——
 邏輯跟著資料放在一起，不管從 Controller、Console 工具還是測試呼叫，規則
 都保證一致。
+
+DataAnnotations 標註屬性本身，讓合法性規則跟著 Entity 走，不因為呼叫端
+（MVC Controller、Console 工具、測試）各自重寫一套判斷而不一致，也不用
+等進了 Repository／資料庫才發現值不合法。`ErrorMessage` 用陳述式而不是
+祈使句，是要跟 Method／Constructor 的合約檢查訊息統一語氣——「合約」講的
+是規則被違反了，不是在教使用者下一步要做什麼；後者屬於 UI 文案，該由畫面
+層（例如 `asp-validation-for` 旁邊另外顯示提示文字）處理，不該混進合約
+訊息裡。
 
 ## 12. Dependency Injection 設計規範
 

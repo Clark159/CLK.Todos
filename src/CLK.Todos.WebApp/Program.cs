@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<ITodoRepository, MockTodoRepository>();
+builder.Services.AddSingleton<IUserRepository, MockUserRepository>();
 builder.Services.AddSingleton<TodoContext>();
 
 var app = builder.Build();
@@ -24,6 +25,12 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.MapStaticAssets();
+
+app.MapControllerRoute(
+    name: "users",
+    pattern: "Users/{action=Index}/{userId?}",
+    defaults: new { controller = "Users" })
+    .WithStaticAssets();
 
 app.MapControllerRoute(
     name: "default",

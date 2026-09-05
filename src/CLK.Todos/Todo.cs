@@ -7,7 +7,7 @@ public class Todo
     // Properties
     public Guid TodoId { get; set; } = Guid.CreateVersion7();
 
-    [Required(ErrorMessage = "請輸入待辦事項標題")]
+    [Required(ErrorMessage = "標題不可為空")]
     [StringLength(100, ErrorMessage = "標題長度不可超過 100 字")]
     public string Title { get; set; } = string.Empty;
 
