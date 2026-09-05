@@ -1,6 +1,6 @@
 # 接續 Prompt：CLK.Todos 架構規則整理
 
-這份文件不是架構規則本身（規則都在 `architecture-notes.md`），是給明天接續工作
+這份文件不是架構規則本身（規則都在 `architecture.md`），是給明天接續工作
 用的交接筆記。打開新的 Claude Code session 時，可以把「開場 Prompt」那段直接
 貼上去，讓我快速抓回上下文。
 
@@ -13,10 +13,11 @@ session 時 `git status` 會看到一大包未提交的變更。
 
 ## 開場 Prompt（明天可以直接貼這段）
 
-> 這是 CLK.Todos 練習專案的接續工作。請先讀 `docs/architecture-notes.md`
+> 這是 CLK.Todos 練習專案的接續工作。請先讀
+> `.claude/skills/mdp-dotnet-architecture/architecture.md`
 > 了解目前已經定案的架構規則（目前到第 16 節），以及 `docs/next-session-prompt.md`
 > 這份交接筆記。我要繼續用「我下規則、你套用到全部相關檔案並驗證、更新
-> architecture-notes.md」這個節奏調整架構慣例，之後每次改完都要 build 驗證、
+> architecture.md」這個節奏調整架構慣例，之後每次改完都要 build 驗證、
 > 重跑網站做端對端測試（新增/編輯/切換/刪除），不要只改完就結束。跟之前一樣，
 > 每次先標註這是不是 Agentic AI Coding，全程中文對話。
 
@@ -54,16 +55,19 @@ session 時 `git status` 會看到一大包未提交的變更。
 
 - 三個專案：`CLK.Todos`（Domain）、`CLK.Todos.Accesses`（實作）、
   `CLK.Todos.WebApp`（MVC 網站）
-- `docs/architecture-notes.md` 共 16 節，是目前最完整的規則來源
+- `.claude/skills/mdp-dotnet-architecture/architecture.md` 是目前最
+  完整的規則來源（已跟 `SKILL.md` 放同一個 Skill 資料夾，不再放
+  `docs/` 底下）
 - Build 0 警告 0 錯誤，Todo CRUD 全功能（新增/查詢/編輯/刪除/切換完成）
   都端對端測試過
 - 最後一次 commit：`bcaae86`（今天這輪改動都還沒進版控）
 
 ## 接下來可以做的方向（可選）
 
-- 把 `docs/architecture-notes.md` 正式轉寫成 `.claude/skills/` 底下的
-  Skill 檔案，讓其他團隊能直接套用這套規則
+- ~~把 `docs/architecture-notes.md` 正式轉寫成 `.claude/skills/` 底下的
+  Skill 檔案，讓其他團隊能直接套用這套規則~~（已完成：`SKILL.md` 跟
+  `architecture.md` 現在同放在 `.claude/skills/mdp-dotnet-architecture/`）
 - 繼續補規則的空白（例如字串合約檢查 `ThrowIfNullOrWhiteSpace` 目前還沒有
   實例可套用、`ConsoleApp` 命名慣例也還沒真的用過）
-- review 一次 `architecture-notes.md` 有沒有殘留的過時範例（例如第 8 節
+- review 一次 `architecture.md` 有沒有殘留的過時範例（例如第 8 節
   `TodoContext` 範例還沒補上 `#region Contracts`/`// Default`）

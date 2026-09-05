@@ -1,8 +1,6 @@
 # .NET 設計規範
 
-這份文件涵蓋 .NET 專案的目錄與分層結構（Workspace／Architecture）、程式碼
-撰寫慣例（Namespace／Class／Constructor／Method），以及 Domain 層的設計規範
-（Context／Repository／Entity）。
+本份.NET 設計規範，涵蓋 .NET 專案的目錄與分層結構（Workspace／Architecture）、程式碼撰寫慣例（Namespace／Class／Constructor／Method）、以及類別的設計規範（Context／Repository／Entity）。.NET專案應遵循本設計規範，進行架構設計規畫及程式碼撰寫開發；同資料夾的 `SKILL.md` 是 AI 依這份設計規範，翻譯產生的Skill工作流程／檢查清單。
 
 > 每一節統一用「規則 → 範例 → 說明」整理。規則一律用 `{Domain}`、
 > `{Entity}` 佔位符描述，不綁定具體名稱。範例具體標註 CLK.Todos 專案裡
@@ -10,20 +8,20 @@
 
 ## 目錄
 
-1. [Workspace 設計規範](#1-workspace-設計規範)
-2. [Architecture 設計規範](#2-architecture-設計規範)
-3. [Namespace 設計規範](#3-namespace-設計規範)
-4. [Class 設計規範](#4-class-設計規範)
-5. [Field 設計規範](#5-field-設計規範)
-6. [Constructor 設計規範](#6-constructor-設計規範)
-7. [Properties 設計規範](#7-properties-設計規範)
-8. [Method 設計規範](#8-method-設計規範)
-9. [Context 設計規範](#9-context-設計規範)
+01. [Workspace 設計規範](#01-workspace-設計規範)
+02. [Architecture 設計規範](#02-architecture-設計規範)
+03. [Namespace 設計規範](#03-namespace-設計規範)
+04. [Class 設計規範](#04-class-設計規範)
+05. [Field 設計規範](#05-field-設計規範)
+06. [Constructor 設計規範](#06-constructor-設計規範)
+07. [Properties 設計規範](#07-properties-設計規範)
+08. [Method 設計規範](#08-method-設計規範)
+09. [Context 設計規範](#09-context-設計規範)
 10. [Repository 設計規範](#10-repository-設計規範)
 11. [Entity 設計規範](#11-entity-設計規範)
 12. [Dependency Injection 設計規範](#12-dependency-injection-設計規範)
 
-## 1. Workspace 設計規範
+## 01. Workspace 設計規範
 
 **規則**
 
@@ -31,8 +29,12 @@
   根目錄。之後新增測試專案，一律放 `tests/`，跟 `src/` 同一層。
 - 一個 `.sln` 可以包含多個 `{Domain}`（多個 Bounded Context）：`.sln`
   檔名對應 repo 本身，不綁定任何一個 `{Domain}`。
-- `docs/`：架構規則、設計文件這類跟程式碼相關但不參與建置的文件放這裡
-  （例如這份 `architecture-notes.md`）。
+- `docs/`：架構規則、設計文件這類跟程式碼相關但不參與建置的文件放這裡；
+  例外是「同時要給 AI 當 Skill 套用」的設計規則本文（例如這份
+  `architecture.md`）——跟對應的 `SKILL.md` 放同一個 Skill 資料夾
+  （`.claude/skills/{skill 名稱}/`），單一檔案同時是規則本文＋Skill 的
+  參考資料，不在 `docs/`／`.claude/skills/` 兩邊各存一份，避免修規則要
+  兩邊同步、久了內容兜不起來。
 - `README.md`：專案說明，放 repo 根目錄。
 - `.gitignore`：Git 版本控制排除清單，放 repo 根目錄。
 - repo 根目錄只留上述這類跟建置無關的東西，不放任何 `.sln`／專案檔案。
@@ -46,7 +48,12 @@ CLK.Todos/                   repo 根目錄
 ├── README.md
 ├── .gitignore
 ├── docs/
-│   └── architecture-notes.md
+│   └── next-session-prompt.md
+├── .claude/
+│   └── skills/
+│       └── mdp-dotnet-architecture/
+│           ├── SKILL.md      AI 執行版（工作流程／檢查清單）
+│           └── architecture.md  規則本文（人類／AI 共用，這份文件）
 └── src/
     ├── CLK.Todos.sln
     ├── CLK.Todos/
@@ -56,9 +63,12 @@ CLK.Todos/                   repo 根目錄
 
 **說明**
 
-依用途分類，避免根目錄堆滿雜項檔案。
+依用途分類，避免根目錄堆滿雜項檔案。規則本文改放進 Skill 資料夾，是因為
+它「本來就只有一份」——`SKILL.md` 不重抄規則內容，只當成套用規則時的操作
+指引與檢查清單，實際規則文字只在 `architecture.md` 存在一次；擺在 `docs/`
+底下反而會讓人以為那才是正本，另外在 Skill 資料夾裡還要再放一份摘要副本。
 
-## 2. Architecture 設計規範
+## 02. Architecture 設計規範
 
 **規則**
 
@@ -96,7 +106,7 @@ src/
 分層相依單向、無循環參照，抽換任一層不影響下層；Domain 不依賴框架，可被
 多個 Host 層專案重複使用；介面與實作分離，換實作不動 Domain。
 
-## 3. Namespace 設計規範
+## 03. Namespace 設計規範
 
 **規則**
 
@@ -134,7 +144,7 @@ namespace 等於專案名稱，一個 `using` 就能取用整個專案型別，�
 避免跟 IDE、`dotnet format` 打架。`{Domain}.WebApp` 維持 MVC 慣例資料夾是
 因為 Razor 慣例路由依賴這個結構，屬於框架限制，不是這裡自訂的規則。
 
-## 4. Class 設計規範
+## 04. Class 設計規範
 
 **規則**
 
@@ -198,7 +208,7 @@ public class TodoContext
 `// Fields`）；省略 `this.` 減少視覺雜訊——欄位已經靠 `_` 前綴、參數靠
 命名跟成員區分，不需要 `this.` 才能辨識。
 
-## 5. Field 設計規範
+## 05. Field 設計規範
 
 **規則**
 
@@ -225,7 +235,7 @@ public class MockTodoRepository : ITodoRepository
 避免建構後被意外改動；lock 物件排最前面，一眼就能看出這個類別有執行緒
 安全考量。
 
-## 6. Constructor 設計規範
+## 06. Constructor 設計規範
 
 適用於所有類別，不限於某一層。
 
@@ -269,7 +279,7 @@ public class TodoContext
 
 `// Default` 讓建構子清楚分成合約檢查跟賦值兩階段。
 
-## 7. Properties 設計規範
+## 07. Properties 設計規範
 
 **規則**
 
@@ -296,7 +306,7 @@ public ITodoRepository TodoRepository
 `get`／`return` 寫法在需要展開邏輯時保持一致風格，單行屬性縮成一行則避免
 不必要的視覺膨脹。
 
-## 8. Method 設計規範
+## 08. Method 設計規範
 
 **規則**
 
@@ -382,7 +392,7 @@ public IActionResult Create([Bind("Title")] Todo? todo = null)
 正常結果跟其他邏輯區隔開來。guard clause 式的提前 `return` 不標
 `// Return`，是因為已經被 `if` 自我解釋，不需要標籤重複說明。
 
-## 9. Context 設計規範
+## 09. Context 設計規範
 
 **規則**
 
@@ -573,7 +583,7 @@ Repository 實作全部走 Singleton，所以改成建構子注入 `IDbContextFa
   不能只靠 Controller 的 `ModelState.IsValid` 裸檢查，也不用自己在 Entity
   方法或 Controller 裡手寫等價的 if 判斷。
 - `ErrorMessage` 一律用「參數驗證」角度撰寫：陳述「這個屬性違反了什麼
-  規則」（`{屬性} 不可為空`、`{屬性} 長度不可超過 N 字`），不要用引導使用者
+  規則」（`{屬性} 不可以為空白`、`{屬性} 長度不可超過 N 字`），不要用引導使用者
   操作的祈使句（不要 `請輸入 XXX`）。跟 Method／Constructor `// Contracts`
   的合約檢查（`ArgumentException` 系列）用同一種語氣，全專案「合約違規」
   一律陳述規則本身，不指示下一步動作。
