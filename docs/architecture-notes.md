@@ -49,23 +49,37 @@ src/
   namespace 一律是 `CLK.Todos.WebApp`（不是 `CLK.Todos.WebApp.Controllers`、
   `CLK.Todos.WebApp.Models`）。
 
-**namespace 宣告一律用帶大括號的區塊寫法**（不是 C# 較新的 file-scoped
-`namespace X;` 寫法）：
+**namespace 宣告一律用 file-scoped 寫法**（`namespace X;`，不要用帶大括號的
+區塊寫法），而且**`namespace` 放在檔案最上面、比 `using` 陳述式還前面，
+兩者中間不空行**：
 
 ```csharp
-namespace CLK.Todos
+namespace CLK.Todos;
+using System.ComponentModel.DataAnnotations;
+
+public class Todo
 {
-    public class Todo
-    {
-        // ...
-    }
+    // ...
+}
+```
+
+沒有 `using` 陳述式的檔案，`namespace` 後面直接空一行接型別宣告：
+
+```csharp
+namespace CLK.Todos;
+
+public interface ITodoRepository
+{
+    // ...
 }
 ```
 
 **為什麼這樣做：** namespace 統一等於專案名稱，用一個 `using {專案名稱}`
 就能拿到整個專案的型別，不用因為挪動檔案到不同資料夾就要跟著改 namespace、
-跟著改呼叫端的 using。大括號寫法把「這個檔案的內容都屬於這個 namespace」的
-範圍用視覺化的區塊表示出來，比 file-scoped 寫法更直觀好懂。
+跟著改呼叫端的 using。file-scoped 寫法比大括號區塊少一層縮排，檔案裡的
+程式碼不用整段往右推一格；`namespace` 排在 `using` 前面，代表「這個檔案
+屬於哪裡」比「這個檔案借用了哪些外部型別」更優先看到，兩者中間不空行則是
+把它們當成同一組「檔案開頭宣告」看待，不用額外空行分隔。
 
 ## 3. Domain 專案（`CLK.Todos`）
 
@@ -204,8 +218,8 @@ public class TodoContext
 - 同一分類內，第一個之後的每個成員之間空一行。
 - 不同分類之間空兩行。
 - **`Imports`（`using` 陳述式）是例外，不算進上面的分類清單**：不加
-  `// Imports` 這種標頭註解，`using` 陳述式直接寫在檔案最上方，跟下面的
-  `namespace` 之間只空**一行**（不是分類之間慣例的兩行）。
+  `// Imports` 這種標頭註解；`using` 陳述式的位置跟間距見第 2 節
+  （`namespace` 在最上面、`using` 緊接在後、兩者中間不空行）。
 - **屬性一律用完整的 `get` / `return` 寫法，不要用 `=>` expression-bodied
   寫法**（自動屬性 `{ get; set; }` 不受影響，這條只針對有邏輯、需要寫
   `return` 的計算屬性）。
@@ -218,28 +232,27 @@ public class TodoContext
 範例（`TodoContext`）：
 
 ```csharp
-namespace CLK.Todos
+namespace CLK.Todos;
+
+public class TodoContext
 {
-    public class TodoContext
+    // Fields
+    private readonly ITodoRepository _todoRepository;
+
+
+    // Constructors
+    public TodoContext(ITodoRepository todoRepository)
     {
-        // Fields
-        private readonly ITodoRepository _todoRepository;
+        _todoRepository = todoRepository;
+    }
 
 
-        // Constructors
-        public TodoContext(ITodoRepository todoRepository)
+    // Properties
+    public ITodoRepository TodoRepository
+    {
+        get
         {
-            _todoRepository = todoRepository;
-        }
-
-
-        // Properties
-        public ITodoRepository TodoRepository
-        {
-            get
-            {
-                return _todoRepository;
-            }
+            return _todoRepository;
         }
     }
 }
@@ -430,7 +443,7 @@ public class Todo
     // Methods
     public void ToggleDone()
     {
-        this.IsDone = !this.IsDone;
+        IsDone = !IsDone;
     }
 }
 ```
@@ -547,9 +560,9 @@ public bool Update(Todo todo)
 
 | 情境 | 寫法 | 範例 |
 |---|---|---|
-| 判斷式（邏輯判斷） | 用 `== false` / `== true` | `if (this.ModelState.IsValid == false)` |
-| 布林運算式（回答「是不是」） | 用 `== false` / `== true` | `return string.IsNullOrEmpty(this.RequestId) == false;` |
-| 賦值（單純翻轉狀態，不是判斷） | 可以用 `!` | `this.IsDone = !this.IsDone;` |
+| 判斷式（邏輯判斷） | 用 `== false` / `== true` | `if (ModelState.IsValid == false)` |
+| 布林運算式（回答「是不是」） | 用 `== false` / `== true` | `return string.IsNullOrEmpty(RequestId) == false;` |
+| 賦值（單純翻轉狀態，不是判斷） | 可以用 `!` | `IsDone = !IsDone;` |
 
 目前套用的地方：判斷式／布林運算式——`Program.cs` 的
 `app.Environment.IsDevelopment()` 判斷、`ErrorViewModel.ShowRequestId`、
@@ -559,32 +572,29 @@ public bool Update(Todo todo)
 **為什麼這樣做：** 判斷式的 `!` 容易被忽略，誤讀整段邏輯的方向（尤其
 跟方法呼叫連在一起時，例如 `!string.IsNullOrEmpty(x)` 很容易漏看那個
 `!`），所以判斷一律用 `== false` / `== true` 讓意圖攤開來看。但單純翻轉
-一個布林值（例如切換開關狀態）不是「判斷」、沒有邏輯方向要辨認，`!this.IsDone`
-比 `this.IsDone == false` 更直接表達「變成相反的值」這個意圖，這種情境可以用
+一個布林值（例如切換開關狀態）不是「判斷」、沒有邏輯方向要辨認，`!IsDone`
+比 `IsDone == false` 更直接表達「變成相反的值」這個意圖，這種情境可以用
 `!`。
 
-## 15. 呼叫自己的方法或屬性要加 `this.`
+## 15. 呼叫自己的方法或屬性不加 `this.`
 
-**在類別內部呼叫自己（包含繼承來的）方法或屬性，一律加上 `this.` 前綴**：
+**在類別內部呼叫自己（包含繼承來的）方法或屬性，一律不加 `this.` 前綴**：
 
 ```csharp
 // Todo 自己的 IsDone 屬性
 public void ToggleDone()
 {
-    this.IsDone = !this.IsDone;
+    IsDone = !IsDone;
 }
 ```
 
-- **欄位不用加 `this.`**——欄位已經用 `_` 前綴跟參數/區域變數區分開來
-  （見第 7 節），不會混淆，加了反而累贅。
-- **區域變數、方法參數不加 `this.`**（它們本來就不是類別成員）。
-- **`nameof(...)` 裡面不用加 `this.`**（例如 `nameof(Index)`，這是編譯期
-  取名稱字串，不是真的呼叫）。
-- **例外：Controller 裡 `return` 直接呼叫方法時不加 `this.`**（例如
-  `return View(todo);`、`return RedirectToAction(...)`、`return NotFound();`），
-  這種 `return` 後面直接接的方法呼叫太常見、太醒目，加 `this.` 反而是
-  雜訊。但 `return` 陳述式裡面**不是**直接呼叫的部分（例如條件式裡的
-  `this.ModelState.IsValid`），還是要照第 15 節的規則加 `this.`：
+- **欄位本來就不加 `this.`**——欄位已經用 `_` 前綴跟參數/區域變數區分開來
+  （見第 7 節），加了反而累贅。
+- **`nameof(...)` 裡面本來就不加 `this.`**（例如 `nameof(Index)`，這是
+  編譯期取名稱字串，不是真的呼叫）。
+- **Controller 裡繼承自基底類別 `Controller` 的成員也不加**（例如
+  `ModelState`、`HttpContext`、`View(...)`、`RedirectToAction(...)`、
+  `NotFound()`）——不管是不是 `return` 直接呼叫，一律省略：
 
 ```csharp
 // TodosController
@@ -592,7 +602,7 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 {
     // Contracts
     ArgumentNullException.ThrowIfNull(todo);
-    if (this.ModelState.IsValid == false) return View(todo);
+    if (ModelState.IsValid == false) return View(todo);
 
     _todoContext.TodoRepository.Add(todo);
 
@@ -601,14 +611,14 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 }
 ```
 
-目前套用的地方：`TodosController` / `HomeController` 裡的 `this.ModelState`、
-`this.HttpContext`（都不是 return 直接呼叫的方法，維持加 `this.`）；
-`Todo.ToggleDone()` 裡的 `IsDone`；`ErrorViewModel.ShowRequestId` 裡的
-`RequestId`。
+目前套用的地方：`TodosController` / `HomeController` 裡的 `ModelState`、
+`HttpContext`；`Todo.ToggleDone()` 裡的 `IsDone`；`ErrorViewModel.ShowRequestId`
+裡的 `RequestId`。
 
-**為什麼這樣做：** 一看到 `this.` 就知道這是類別自己的成員（不管是自己
-定義的還是繼承來的），跟區域變數、參數、外部物件的成員一眼區分開來，
-不用回頭確認這個識別字到底是從哪裡來的。
+**為什麼這樣做：** `this.` 在這個專案裡沒有實質區分作用——欄位已經靠 `_`
+前綴、方法參數靠命名跟類別成員區分開來，不會混淆到需要 `this.` 才能認出
+「這是自己的成員」；省略之後每一行都少一截視覺雜訊，看程式碼的人一樣能
+從命名（`_` 前綴 vs. 沒有前綴）判斷出處，不需要額外的前綴當提示。
 
 ## 16. 方法內部的小區塊標籤
 
@@ -746,16 +756,16 @@ id 屬於哪個 Entity，不用回頭看是哪張表／哪個型別；`int` 流�
 ## 18. Entity 稽核時間戳記：`CreateTime` 與 `UpdateTime`
 
 **Entity 記錄建立時間的屬性一律叫 `CreateTime`（不是 `CreatedAt`），
-更新時間叫 `UpdateTime`**，兩者都是 `DateTime`，預設值都給
-`DateTime.Now`：
+更新時間叫 `UpdateTime`**，兩者都是 `DateTime`，**一律存 UTC**，預設值
+都給 `DateTime.UtcNow`（不是 `DateTime.Now`）：
 
 ```csharp
 public class Todo
 {
     // Properties
-    public DateTime CreateTime { get; set; } = DateTime.Now;
+    public DateTime CreateTime { get; set; } = DateTime.UtcNow;
 
-    public DateTime UpdateTime { get; set; } = DateTime.Now;
+    public DateTime UpdateTime { get; set; } = DateTime.UtcNow;
 }
 ```
 
@@ -763,20 +773,30 @@ public class Todo
   不需要 Repository 額外賦值。
 - **`UpdateTime`**：預設值跟 `CreateTime` 一樣（代表「還沒被更新過，
   最後異動時間就是建立時間」），**由 Repository 的 `Update` 方法在
-  寫入當下重新蓋上 `DateTime.Now`**（見 `MockTodoRepository.Update` 的
+  寫入當下重新蓋上 `DateTime.UtcNow`**（見 `MockTodoRepository.Update` 的
   `// Execute` 區塊，跟 `Title`／`IsDone` 這些欄位一起複製，只是這欄
   不信任呼叫端傳進來的值，一律用當下時間覆蓋）。
 - Entity 上的狀態轉換方法（例如 `Todo.ToggleDone()`）**不用自己碰
   `UpdateTime`**——只要有經過 Repository 的 `Update` 就一定會蓋到最新
   時間，不用每個會改變狀態的方法各自處理一次。
+- **這條不只限於 `CreateTime`／`UpdateTime`，是全專案通則：任何 Entity
+  上儲存的時間戳記一律用 `DateTime.UtcNow` 產生、以 UTC 存放**；需要
+  顯示給使用者看的地方（例如 View）才在畫面層轉成當地時區，不要在
+  Domain／資料儲存層存當地時間。
 
 目前套用的地方：`Todo.CreateTime`／`UpdateTime`、
 `MockTodoRepository.Add`（`CreateTime` 用屬性預設值，不用額外賦值）／
-`Update`（蓋 `UpdateTime`）／`FindAll`（排序用 `CreateTime`）。
+`Update`（蓋 `UpdateTime`）／`FindAll`（排序用 `CreateTime`）。目前
+`Index.cshtml`／`Delete.cshtml` 直接顯示 `CreateTime`／`UpdateTime`
+原始值（UTC），還沒轉當地時區——之後有需要再補時區轉換。
 
 **為什麼這樣做：** `CreateTime`／`UpdateTime` 一組對稱命名，比
 `CreatedAt` 這種只顧建立、沒有對應更新時間的命名更完整；蓋
 `UpdateTime` 的責任統一放在 Repository 的 `Update` 方法（跟第 11 節
 「Repository 只放存取資料的方法」一致——這是持久化當下的稽核動作，
 不是 Entity 自身的業務邏輯），不用每個會呼叫 `Update` 的地方（Controller、
-Entity 方法）各自記得要蓋時間戳記，只要走過 `Update` 就保證正確。
+Entity 方法）各自記得要蓋時間戳記，只要走過 `Update` 就保證正確。存
+UTC 是因為 `DateTime.Now` 綁死伺服器當地時區，一旦伺服器搬到別的時區、
+或多台伺服器分佈在不同時區，同一筆資料在不同機器上取到的「當地時間」
+會不一致；UTC 是單一、不受時區影響的絕對時間基準，排序、比較、跨系統
+交換資料都不會出錯，這是多數後端系統的標準做法。

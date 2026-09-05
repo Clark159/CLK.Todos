@@ -1,16 +1,15 @@
-namespace CLK.Todos
+namespace CLK.Todos;
+
+public interface ITodoRepository
 {
-    public interface ITodoRepository
-    {
-        // Methods
-        Todo Add(Todo todo);
+    // Methods
+    Todo Add(Todo todo);
 
-        bool Update(Todo todo);
+    bool Update(Todo todo);
 
-        bool Remove(Guid todoId);
+    bool Remove(Guid todoId);
 
-        Todo FindById(Guid todoId);
+    Todo FindById(Guid todoId);
 
-        IReadOnlyList<Todo> FindAll();
-    }
+    IReadOnlyList<Todo> FindAll();
 }
