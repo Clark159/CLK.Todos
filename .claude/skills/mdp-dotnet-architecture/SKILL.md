@@ -3,7 +3,7 @@ name: mdp-dotnet-architecture
 description: .NET 專案通用設計規範（目錄分層、Namespace、Class 成員排序、Constructor/Method 慣例、Context／Repository／Entity／DI 規則）。撰寫或修改任何 .NET 專案的 .cs 檔案（含 Domain／Access／Host 層）前必讀，確保產出符合本規範。
 user-invocable: true
 metadata:
-  created: "2026-09-05 22:24:30 +0800"
+  created: "2026-09-05 22:48:06 +0800"
 ---
 
 # .NET 設計規範（AI 執行版）
@@ -34,15 +34,15 @@ metadata:
   Context，定義業務核心邏輯與規格，不依賴任何框架。
 - `{Domain}.Accesses`：Access 層，類別庫專案。提供 Repository 介面的實
   作，負責實際資料存取（資料庫、記憶體等）。
-- `{Domain}.WebApp`：Host 層，ASP.NET MVC 專案，提供網頁使用者介面。
-- `{Domain}.BlazorApp`：Host 層，Blazor 專案，提供互動式網頁應用的使用者
-  介面。
-- `{Domain}.ConsoleApp`：Host 層，Console 專案，提供命令列工具（例如批次
-  匯入、排程工作），無使用者介面。
-- 分層相依：Domain 層不相依其他任何層；Access 層相依 Domain 層；Host 層
-  相依 Domain 層＋Access 層。
-- 同一個 `{Domain}` 可以同時有多個 Host 層專案，都依賴同一個
-  `{Domain}.Accesses`／`{Domain}`。
+- `{Domain}.WebApp`：Host 層，ASP.NET MVC 專案。提供網頁使用者介面。
+- `{Domain}.BlazorApp`：Host 層，Blazor 專案。提供互動式網頁應用的使用
+  者介面。
+- `{Domain}.ConsoleApp`：Host 層，Console 專案。提供命令列工具（例如批
+  次匯入、排程工作），無使用者介面。
+- 分層相依：Domain 層不相依其他任何層；Access 層相依 Domain 層；Host
+  層相依 Domain 層＋Access 層。
+- 同一個 `{Domain}` 可以同時有多個 Host 層專案（例如網站＋批次匯入用的
+  Console 工具），都依賴同一個 `{Domain}.Accesses`／`{Domain}`。
 - `.sln` 檔名對應 repo，跟所有專案同一層，不放 repo 根目錄。
 - `.sln` 可以包含多組 `{Domain}`／`{Domain}.Accesses`／Host 層專案；各組
   `{Domain}` 之間彼此獨立、不共用 Repository 介面或 Context。
@@ -50,14 +50,16 @@ metadata:
 ## 03. Namespace
 
 - 每個專案內所有檔案，namespace 一律等於專案名稱本身，不因資料夾而加後
-  綴。
+  綴（例如 `{Domain}.WebApp` 裡不管檔案放在哪個資料夾，namespace 都是
+  `{Domain}.WebApp`）。
 - 一律用 file-scoped 寫法（`namespace X;`，不用大括號區塊）。
-- `using` 放在檔案最上面，跟 `namespace` 之間空一行（C# 官方範本順序）；
-  沒有 `using` 的檔案直接從 `namespace` 開始。
-- 資料夾要不要拆，依專案性質決定：`{Domain}`、`{Domain}.Accesses` 不拆資
-  料夾，檔案直接放專案根目錄；`{Domain}.WebApp`（Host 層）維持 MVC 慣例
-  資料夾（`Controllers/`／`Models/`／`Views/`）。不論拆不拆，資料夾都只
-  是物理分類，不影響 namespace。
+- `using` 放在檔案最上面，跟 `namespace` 之間空一行（C# 官方範本順序，
+  不要反過來）；沒有 `using` 的檔案直接從 `namespace` 開始。
+- 資料夾要不要拆，依專案性質決定：`{Domain}`（Domain）、
+  `{Domain}.Accesses`（資料存取實作）不拆資料夾，檔案直接放專案根目
+  錄，靠 namespace 就足夠辨識；`{Domain}.WebApp`（Host 層）維持 MVC 慣
+  例資料夾（`Controllers/`／`Models/`／`Views/`）。不論拆不拆，資料夾都
+  只是物理上分類檔案，不影響 namespace。
 
 ## 04. Class（成員排序）
 
@@ -109,7 +111,7 @@ metadata:
 - 一律用完整的 `get` / `return` 寫法，不用 `=>` expression-bodied（自動
   屬性 `{ get; set; }` 不受影響）。
 - `get` 如果整個只有一行（只有一個 `return`），不加 `// Return`，整個
-  `get` 縮成一行寫。
+  `get` 縮成一行寫，比展開成三行好讀。
 
 ## 08. Method
 
@@ -138,12 +140,13 @@ metadata:
 - `// Contracts` 內每個檢查獨立一行，不用 `||`／`&&` 合併；檢查之間不空
   行，跟後面邏輯空一行。
 - `// Return`：方法裡真正交付結果的最後一個 `return` 才標；guard clause
-  式的提前 `return`（例如找不到資料就提前回應）不用標。回傳型別是
-  `void` 的方法（例如找不到就丟例外）沒有交付結果，不需要 `// Return`。
+  式的提前 `return`（例如 `if ({entity} is null) return NotFound();`）
+  不用標。回傳型別是 `void` 的方法（例如 `Update`／`Remove` 找不到就丟
+  例外）沒有交付結果，不需要 `// Return`。
 - guard clause 一律省略大括號、寫成一行（不只限於 `// Contracts`，方法
   本體任何「不合法／找不到就提前 return 或丟例外」都比照辦理）。
-- 只有一個步驟的方法（例如單筆查詢）不需要額外標籤，`// Return` 本身就
-  夠。
+- 只有一個步驟的方法（例如 `FindById`）不需要額外標籤，`// Return` 本身
+  就夠。
 
 ## 09. Context
 
@@ -160,12 +163,14 @@ metadata:
 
 - 命名：介面 `I{Entity}Repository`；非持久化實作
   `Mock{Entity}{介面名}`；真實資料庫實作（尚未使用，先預留）
-  `{技術}{Entity}{介面名}`（例如 `Ef{Entity}Repository`）。
+  `{技術}{Entity}{介面名}`（`{技術}` 例如資料存取技術為 Entity Framework
+  時取 `Ef`）。
 - 方法順序固定：新增 → 修改 → 刪除 → 查單筆 → 查全部 → 查全部（有條
   件）。
 - 刪除方法一律叫 `Remove`，不叫 `Delete`。
 - 查詢命名：`Find` 開頭查單筆（回傳 `{Entity}?`）；`FindAll` 開頭查多筆
   （回傳 `IReadOnlyList<{Entity}>`）。
+- 方法順序與命名樣板：
 
 ```csharp
 void Add({Entity} entity);
@@ -190,14 +195,15 @@ IReadOnlyList<{Entity}> FindAllByXX();
   本身表達「找不到」（`null`／空集合）；Command 方法（`Add`／`Update`／
   `Remove`）一律回傳 `void`，找不到對應資料就直接丟例外
   （`KeyNotFoundException`）。
-- 例外要在哪一層被攔截、轉換成什麼樣的 HTTP 回應，先不在這份規範裡，留
-  待之後訂錯誤處理規則時再一併決定。
-- Repository 只放存取資料的方法（CRUD＋查詢），不放業務邏輯／狀態轉換。
-  不要在 Repository 開 `Toggle{XX}(Guid {entity}Id)` 這種直接用 id 操
-  作、把邏輯藏在 Repository 裡的方法。
-- 真實資料庫實作建構子注入 `IDbContextFactory<{Domain}DbContext>`，每個
-  方法內用 `using (...) { }`（不用 `using var`）建立短命 `DbContext`，
-  區塊結束就 `Dispose`。
+- 例外要在哪一層被攔截、轉換成什麼樣的 HTTP 回應，先不在這份文件規範，
+  留待之後訂錯誤處理規則時再一併決定。
+- Repository 只放存取資料的方法（CRUD＋查詢），不放業務邏輯／狀態轉換
+  （例如「切換完成狀態」）。不要在 Repository 開
+  `Toggle{XX}(Guid {entity}Id)` 這種直接用 id 操作、把邏輯藏在
+  Repository 裡的方法。
+- 真實資料庫實作（`Ef{Entity}Repository`）建構子注入
+  `IDbContextFactory<{Domain}DbContext>`，每個方法內用 `using (...) { }`
+  （不用 `using var`）建立短命 `DbContext`，區塊結束就 `Dispose`。
 
 ## 11. Entity
 
@@ -211,8 +217,8 @@ IReadOnlyList<{Entity}> FindAllByXX();
   `DateTime`，一律存 UTC，預設值 `DateTime.UtcNow`（不是
   `DateTime.Now`）；這條是全專案通則，任何時間戳記都比照辦理，需要顯示
   當地時間才在畫面層轉換。
-- Entity 狀態轉換方法不用自己碰 `UpdateTime`，經過 Repository 的
-  `Update` 就一定會蓋到。
+- Entity 狀態轉換方法（例如切換某個布林狀態的方法）不用自己碰
+  `UpdateTime`，經過 Repository 的 `Update` 就一定會蓋到。
 - 充血模型（Rich Domain Model）：跟 Entity 自身狀態有關的業務邏輯，一律
   寫成 Entity 上的方法，不要寫在 Repository 或 Controller 裡。
 - 呼叫端標準流程：Repository 查出 Entity → 呼叫 Entity 方法改變狀態 →
@@ -273,27 +279,138 @@ IReadOnlyList<{Entity}> FindAllByXX();
 
 ## 自我檢查清單（寫完程式碼後逐條核對）
 
-- [ ] repo 根目錄只有 `src/`／`docs/`／`tests/`／`README.md`／`LICENSE`／
-      `.gitignore` 這類跟建置無關的東西，`.sln`／專案檔案都在 `src/`
-      裡（§1）。
-- [ ] `.sln` 跟所有專案同一層，各組 `{Domain}` 之間彼此獨立、不共用
-      Repository 介面或 Context（§2）。
-- [ ] Namespace file-scoped，且等於專案名稱（§3）。
-- [ ] 類別成員分類順序、空行規則正確；不必要的 `this.` 都拿掉（§4）。
+清單顆粒度跟到每一條規則，逐項打勾；只有命名鏈（§5～§7）這種本來就是
+同一件事的不同面向才合併成一條。
+
+**§1 Workspace**
+
+- [ ] `src/` 有放所有原始碼專案。
+- [ ] `docs/` 有放架構規則／設計文件這類跟程式碼相關但不參與建置的文件。
+- [ ] `tests/` 有放測試專案，跟 `src/` 同一層。
+- [ ] `README.md` 放在 repo 根目錄。
+- [ ] `LICENSE` 放在 repo 根目錄。
+- [ ] `.gitignore` 放在 repo 根目錄。
+- [ ] repo 根目錄沒有 `.sln`／專案檔案，只留跟建置無關的東西。
+
+**§2 Architecture**
+
+- [ ] `{Domain}` 是類別庫專案，只提供 Entity／Repository 介面／Context，
+      不依賴任何框架。
+- [ ] `{Domain}.Accesses` 是類別庫專案，只提供 Repository 介面的實作。
+- [ ] `{Domain}.WebApp`（若有）是 ASP.NET MVC 專案。
+- [ ] `{Domain}.BlazorApp`（若有）是 Blazor 專案。
+- [ ] `{Domain}.ConsoleApp`（若有）是 Console 專案，無使用者介面。
+- [ ] 分層相依方向正確：Domain 不相依任何層；Access 相依 Domain；Host
+      相依 Domain＋Access。
+- [ ] 同一個 `{Domain}` 下多個 Host 層專案都依賴同一個
+      `{Domain}.Accesses`／`{Domain}`，沒有各自另開一份。
+- [ ] `.sln` 跟所有專案同一層，不在 repo 根目錄。
+- [ ] 多組 `{Domain}` 彼此獨立，沒有共用 Repository 介面或 Context。
+
+**§3 Namespace**
+
+- [ ] Namespace 一律等於專案名稱本身，不因資料夾而加後綴。
+- [ ] 一律 file-scoped 寫法。
+- [ ] `using` 放最上面，跟 `namespace` 間空一行，順序沒有反過來。
+- [ ] `{Domain}`／`{Domain}.Accesses` 沒拆資料夾；`{Domain}.WebApp` 維
+      持 MVC 慣例資料夾。
+
+**§4 Class 成員排序**
+
+- [ ] 成員照 Singleton／Imports／Constants／Enumeration／Fields／
+      Constructors／Properties／Methods／Operators／Handlers／Events
+      順序排列，只列出實際有內容的分類。
+- [ ] 分類標頭下第一個成員不空行，同分類成員間空一行，不同分類間空兩
+      行。
+- [ ] `Imports` 沒有另外加標頭、沒算進分類清單。
+- [ ] 類別內部呼叫自己（含繼承來）的方法／屬性都沒有加 `this.` 前綴。
+- [ ] 這條排序規則沒有套用到 `Program.cs` 這種 top-level statements 檔
+      案。
+
+**§5～§7 命名鏈與 Field／Constructor／Properties**
+
 - [ ] 欄位／參數／屬性命名鏈（`I{X}` → `{x}` 參數 → `_{x}` 欄位 →
-      `{X}` 屬性）一致（§5～§7）。
-- [ ] 建構子：`// Contracts` 檢查 not-null → 空一行 → `// Default` 賦值
-      進欄位（§6）。
-- [ ] 方法內區塊標籤正確、guard clause 省略大括號、`// Return` 只標最
-      後交付結果的 return（§8）。
-- [ ] Repository 方法順序＋命名（`Find`／`FindAll`）＋失敗語意（Query
-      回傳值／Command 丟例外）都符合 §10。
-- [ ] Entity 主鍵型別／命名／預設值、稽核時間戳記命名／型別／UTC 都符
-      合 §11。
-- [ ] 業務欄位都有 `DataAnnotations` 保護，`ErrorMessage` 是陳述式
-      （`不可為空`／`不可超過…`），沒有祈使句（`請輸入…`）（§11）。
-- [ ] 不可為空白的字串屬性都有 `[Required(ErrorMessage = "不可以為空白")]`，
-      沒有只靠 `[StringLength]` 頂替（§11）。
-- [ ] `{Domain}Context` 沒有為新 Entity 另開 Context（§9）。
-- [ ] DI 註冊都在 `Program.cs`，順序＋生命週期（Singleton）符合 §12。
-- [ ] Controller／路由／View 用 `{entity}Id`，不是泛用 `id`（§11）。
+      `{X}` 屬性）一致。
+- [ ] `// Fields` 分類內 lock 物件排最前面。
+- [ ] 建構子：`// Contracts` 檢查 not-null → 空一行 → `// Default` 賦
+      值進欄位；先用私有欄位承接注入物件，沒有繞過欄位直接賦值給屬性。
+- [ ] 屬性一律用完整 `get`／`return` 寫法（自動屬性除外）；單行 `get`
+      沒有加 `// Return`。
+
+**§8 Method**
+
+- [ ] 方法本體用平鋪區塊＋單字標籤，沒有深巢狀，標籤沒有把邏輯寫進註
+      解裡；標籤有從既定詞彙表挑，沒有自創跟既有詞彙重疊的新詞。
+- [ ] `// Contracts` 放在方法（或建構子）本體最前面。
+- [ ] 參照型別參數有 `ArgumentNullException.ThrowIfNull` 檢查。
+- [ ] 字串參數有 `ArgumentException.ThrowIfNullOrWhiteSpace` 檢查。
+- [ ] 值型別參數沒有多餘檢查。
+- [ ] MVC 驗證判斷（`ModelState.IsValid` 等）有放進同一個 `// Contracts`
+      底下。
+- [ ] `// Contracts` 內每個檢查獨立一行，沒用 `||`／`&&` 合併。
+- [ ] `// Return` 只標最後交付結果的 return；guard clause 式提前
+      return、`void` 方法都沒有誤標。
+- [ ] guard clause 省略大括號、寫成一行；只有一步驟的方法沒有多加標
+      籤。
+
+**§9 Context**
+
+- [ ] `{Domain}Context` 把所有 Repository 介面透過建構子注入，用唯讀
+      屬性對外提供。
+- [ ] 沒有為新 Entity 另開 Context，是在既有 Context 上多加屬性。
+- [ ] 外部呼叫端注入 `{Domain}Context`，沒有直接注入個別 Repository 介
+      面。
+
+**§10 Repository**
+
+- [ ] 介面／實作命名符合 `I{Entity}Repository`／`Mock{Entity}...`／
+      `{技術}{Entity}...` 規則。
+- [ ] 方法順序：新增 → 修改 → 刪除 → 查單筆 → 查全部 → 查全部（有條
+      件）。
+- [ ] 刪除方法叫 `Remove`，不是 `Delete`。
+- [ ] 查詢方法用 `Find`／`FindAll` 開頭，回傳型別正確（`{Entity}?`／
+      `IReadOnlyList<{Entity}>`）。
+- [ ] 方法簽章跟 §10 樣板一致。
+- [ ] `Add` 沒有多餘檢查主鍵是否已存在。
+- [ ] `Add` 有把 `CreateTime`／`UpdateTime` 都蓋上 `DateTime.UtcNow`。
+- [ ] `Update` 有維持 `CreateTime`、只蓋 `UpdateTime`。
+- [ ] 失敗語意沒有混用：Query 用回傳值表達找不到，Command 丟
+      `KeyNotFoundException`。
+- [ ] 沒有自己發明例外攔截／HTTP 回應轉換邏輯（這部分留待之後規則）。
+- [ ] Repository 沒有放業務邏輯／狀態轉換方法（沒有 `Toggle{XX}` 這類
+      方法）。
+- [ ] 真實資料庫實作有注入 `IDbContextFactory`，每個方法用
+      `using (...) { }` 建立／`Dispose` 短命 `DbContext`。
+
+**§11 Entity**
+
+- [ ] 主鍵屬性叫 `{Entity}Id`（不是 `Id`），型別 `Guid`，用
+      `Guid.CreateVersion7()` 產生。
+- [ ] 主鍵變數／參數統一用 `{entity}Id`（Repository／Controller／路由／
+      View 都一致），沒有留通用的 `id`。
+- [ ] 稽核時間戳記叫 `CreateTime`／`UpdateTime`（不是 `CreatedAt`），型
+      別 `DateTime`，一律存 UTC。
+- [ ] Entity 狀態轉換方法沒有自己碰 `UpdateTime`。
+- [ ] 跟 Entity 自身狀態有關的業務邏輯寫成 Entity 方法，沒有寫在
+      Repository 或 Controller 裡。
+- [ ] 呼叫端流程：查出 Entity → 呼叫 Entity 方法 → 存回去，沒有跳過
+      Entity 直接改欄位。
+- [ ] 業務欄位都有 `DataAnnotations` 保護，沒有只靠
+      `ModelState.IsValid` 裸檢查或手寫等價 if 判斷。
+- [ ] 不可為空白的字串屬性都有
+      `[Required(ErrorMessage = "不可以為空白")]`，沒有只靠
+      `[StringLength]` 頂替。
+- [ ] `ErrorMessage` 是陳述式（`不可為空`／`不可超過…`），沒有祈使句
+      （`請輸入…`）。
+
+**§12 Dependency Injection**
+
+- [ ] Domain／Access 層在 DI 容器都用 Singleton 生命週期註冊。
+- [ ] 所有 DI 註冊都寫在 Host 層 `Program.cs`。
+- [ ] 註冊順序：先 Repository 介面對實作，再 `{Domain}Context`。
+- [ ] 非持久化實作用
+      `AddSingleton<I{Entity}Repository, Mock{Entity}Repository>()`。
+- [ ] 真實資料庫實作用 `AddDbContextFactory<{Domain}DbContext>()` 搭配
+      `AddSingleton<I{Entity}Repository, Ef{Entity}Repository>()`。
+- [ ] `{Domain}Context` 用 `AddSingleton<{Domain}Context>()` 註冊。
+- [ ] 沒有去管 Host 層本身的生命週期（那是 ASP.NET Core 框架管的）。

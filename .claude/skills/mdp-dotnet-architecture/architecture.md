@@ -322,7 +322,7 @@ public ITodoRepository TodoRepository
 - `// Contracts` 內每個檢查獨立一行，不用 `||`／`&&` 合併；檢查之間不空行，
   跟後面邏輯空一行。
 - `// Return`：方法裡真正交付結果的最後一個 `return` 才標；guard
-  clause 式的提前 `return`（例如 `if (todo is null) return NotFound();`）
+  clause 式的提前 `return`（例如 `if ({entity} is null) return NotFound();`）
   不用標。回傳型別是 `void` 的方法（例如 `Update`／`Remove` 找不到就丟
   例外）沒有交付結果，不需要 `// Return`。
 - guard clause 一律省略大括號、寫成一行（不只限於 `// Contracts`，
@@ -439,8 +439,8 @@ public class TodoContext
 **規則**
 
 - 命名：介面 `I{Entity}Repository`；非持久化實作 `Mock{Entity}{介面名}`；
-  真實資料庫實作（尚未使用，先預留）`{技術}{Entity}{介面名}`（例如
-  `EfTodoRepository`）。
+  真實資料庫實作（尚未使用，先預留）`{技術}{Entity}{介面名}`（`{技術}`
+  例如資料存取技術為 Entity Framework 時取 `Ef`）。
 - 方法順序固定：新增 → 修改 → 刪除 → 查單筆 → 查全部 → 查全部（有條件）。
 - 刪除方法一律叫 `Remove`，不叫 `Delete`。
 - 查詢命名：`Find` 開頭查單筆（回傳 `{Entity}?`）；`FindAll` 開頭查
@@ -559,8 +559,8 @@ Repository 實作全部走 Singleton，所以改成建構子注入 `IDbContextFa
   `DateTime`，一律存 UTC，預設值 `DateTime.UtcNow`（不是 `DateTime.Now`）；
   這條是全專案通則，任何時間戳記都比照辦理，需要顯示當地時間才在畫面層
   轉換。
-- Entity 狀態轉換方法（例如 `ToggleDone()`）不用自己碰 `UpdateTime`，
-  經過 Repository 的 `Update` 就一定會蓋到。
+- Entity 狀態轉換方法（例如切換某個布林狀態的方法）不用自己碰
+  `UpdateTime`，經過 Repository 的 `Update` 就一定會蓋到。
 - 充血模型（Rich Domain Model）：跟 Entity 自身狀態有關的業務邏輯，一律
   寫成 Entity 上的方法，不要寫在 Repository 或 Controller 裡。
 - 呼叫端標準流程：Repository 查出 Entity → 呼叫 Entity 方法改變狀態 →
@@ -699,7 +699,8 @@ Domain／Access 兩層都不持有跟單一 HTTP 請求綁定的狀態——Repo
 
 當使用者要求「把 architecture.md 轉換／翻譯成 SKILL.md」時，依下列規則
 重新生成同資料夾的 `SKILL.md`（每次都整份重寫，不做局部修補、不留舊
-內容）。並且在SKILL.md內容裡面加入，檔案建立的日期時間。
+內容）。並且在SKILL.md內容裡面加入，檔案建立的日期時間。生成後還要逐條
+確認兩邊規範吻合，有不吻合的就繼續修改，直到吻合為止，轉換才算完成。
 
 **規則**
 
@@ -709,9 +710,22 @@ Domain／Access 兩層都不持有跟單一 HTTP 請求綁定的狀態——Repo
   文字接到規則 bullet 後面（例如用「——」或括號補一句原因），即使只是
   改寫成一句話。規則本身要單獨站得住腳，推理／原因留在 architecture.md
   的「說明」段落即可，需要時人類或 AI 直接回來看那裡。
-- 具體專案／Entity 名稱（例如 CLK.Todos、`Todo`、`TodoContext`、
-  `MockTodoRepository`、`User` 等）一律還原成 `{Domain}`／`{Entity}`／
-  `{entity}` 佔位符；規則本文原本就是用佔位符描述的段落可直接照抄。
+- 「逐條照搬」要做到字句層級，不是只核對 bullet 數量對不對：同一條
+  bullet 裡的括號例子、附帶子句（例如「不要反過來」「比展開成三行好
+  讀」這類語氣強調或舉例）都要完整保留，不能因為看起來像次要資訊、可
+  有可無，就在轉換時省略或改寫成精簡版。轉換完成後要逐條比對兩份文件
+  的規則文字，不是只看章節數或 bullet 數量相同就視為吻合。
+- 「規則」段落本文依本文件開頭凡例，原本就只能用 `{Domain}`／`{Entity}`／
+  `{entity}` 佔位符描述，不該出現具體專案／Entity 名稱（例如 CLK.Todos、
+  `Todo`、`TodoContext`、`MockTodoRepository`、`User` 等），直接照抄即
+  可。這條也涵蓋規則本文行內程式碼片段裡綁定 Entity 的變數名稱（例如
+  `if (todo is null) ...` 的 `todo`），不是只看 PascalCase 的類別／方法
+  名稱；行內程式碼要舉例時一律用 `{entity}`／`{Entity}` 佔位符命名變
+  數。若轉換時發現「規則」段落本文混進具體名稱，代表 architecture.md
+  本文本身違反開頭凡例，屬於正本的缺陷：先回頭修正 architecture.md 本文
+  （把具體名稱改寫成不綁定 Entity／專案的佔位符描述，不是刪掉那段規
+  則），修好後再照修正後的文字轉換，不要在生成 SKILL.md 時單方面把具體
+  名稱代換成佔位符、放著 architecture.md 本文的缺陷不動。
 - 程式碼區塊能不能保留，看它在本文件原本放在哪個段落，不是看它改寫成
   佔位符後像不像樣板：只有原文放在「規則」段落裡的程式碼區塊（例如 §10
   的 Repository 方法簽章樣板）可以保留；原文放在「範例」段落的程式碼
@@ -727,8 +741,20 @@ Domain／Access 兩層都不持有跟單一 HTTP 請求綁定的狀態——Repo
 - 保留／重寫「使用時機」「新增 Entity 檢查清單」「自我檢查清單」這幾個
   給 AI 執行用的操作段落，清單裡的路徑與命名一樣改用 `{Domain}`／
   `{Entity}` 佔位符。
-- 必須包含「自我檢查清單（寫完程式碼後逐條核對）」這個段落，逐條對應
-  §01～§12 各節規則，缺這段視同轉換不完整。
+- 必須包含「自我檢查清單（寫完程式碼後逐條核對）」這個段落，缺這段視
+  同轉換不完整。清單顆粒度要跟到每一條規則 bullet，不是每個章節縮成一
+  條：一個章節如果有好幾條規則，能個別檢查、個別會不會漏做的（例如
+  §11 的主鍵型別、稽核時間戳記、充血模型、DataAnnotations、
+  `[Required]`、`ErrorMessage` 語氣，是六件各自獨立、可能各自漏掉的
+  事），就拆成好幾條檢查項目分別列出，不要為了清單簡短，把好幾條不同
+  規則揉成一條、讓其中任何一條被漏做時清單看起來還是打勾過得去；只有
+  規則之間本來就是同一件事的不同面向（例如命名鏈 `I{X}`→`{x}`→`_{x}`
+  →`{X}` 貫穿 §5～§7）才合併成一條。
+- 生成 `SKILL.md` 後，要拿 architecture.md §01～§12 的「規則」段落逐條
+  跟 `SKILL.md` 對應章節比對，不是只核對章節數或 bullet 數量相同；比對
+  時發現任何不吻合（漏掉的 bullet、漏掉的括號例子或子句、多出來的說明
+  文字或具體名稱），就依照上面各條規則繼續修改，改完再重新比對一次，
+  直到逐條吻合為止，才算完成這次轉換。
 
 **說明**
 
