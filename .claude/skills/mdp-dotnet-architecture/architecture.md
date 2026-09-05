@@ -1,6 +1,6 @@
 # .NET 設計規範
 
-本份.NET 設計規範，涵蓋 .NET 專案的目錄與分層結構（Workspace／Architecture）、程式碼撰寫慣例（Namespace／Class／Constructor／Method）、以及類別的設計規範（Context／Repository／Entity）。.NET專案應遵循本設計規範，進行架構設計規畫及程式碼撰寫開發；同資料夾的 `SKILL.md` 是 AI 依這份設計規範，翻譯產生的Skill工作流程／檢查清單。
+本份.NET 設計規範，涵蓋 .NET 專案的目錄與分層結構（Workspace／Architecture）、程式碼撰寫慣例（Namespace／Class／Constructor／Method）、以及類別的設計規範（Context／Repository／Entity）。.NET專案應遵循本設計規範，進行架構設計規畫及程式碼撰寫開發；同資料夾的 `SKILL.md` 是 AI 依這份設計規範，翻譯產生給AI使用的Skill工作流程／檢查清單。
 
 > 每一節統一用「規則 → 範例 → 說明」整理。規則一律用 `{Domain}`、
 > `{Entity}` 佔位符描述，不綁定具體名稱。範例具體標註 CLK.Todos 專案裡
@@ -20,6 +20,7 @@
 10. [Repository 設計規範](#10-repository-設計規範)
 11. [Entity 設計規範](#11-entity-設計規範)
 12. [Dependency Injection 設計規範](#12-dependency-injection-設計規範)
+13. [SKILL.md 轉換規範](#13-skillmd-轉換規範)
 
 ## 01. Workspace 設計規範
 
@@ -703,3 +704,38 @@ Domain／Access 兩層都不持有跟單一 HTTP 請求綁定的狀態——Repo
 資料存取的入口，Context 只是聚合這些入口——用 Singleton 可以避免每個請求
 都重新建立一整條相依鏈；也讓「所有 Repository 實作的生命週期規則一致」這
 件事，不因為 Mock 換成真實資料庫實作而被打破。
+
+## 13. SKILL.md 轉換規範
+
+當使用者要求「把 architecture.md 轉換／翻譯成 SKILL.md」時，依下列規則
+重新生成同資料夾的 `SKILL.md`（每次都整份重寫，不做局部修補、不留舊
+內容）：
+
+**規則**
+
+- 只轉換「規則」段落；每節的「範例」「說明」段落一律不搬過去，`SKILL.md`
+  不放具體程式碼範例。
+- 具體專案／Entity 名稱（例如 CLK.Todos、`Todo`、`TodoContext`、
+  `MockTodoRepository`、`User` 等）一律還原成 `{Domain}`／`{Entity}`／
+  `{entity}` 佔位符；規則本文原本就是用佔位符描述的段落可直接照抄。
+- 只有規則本身就是「佔位符樣板」的程式碼區塊（例如 §10 的 Repository
+  方法簽章樣板）可以保留，其餘一律移除。
+- `SKILL.md` 全文（含 frontmatter）不得出現對 `architecture.md` 的檔案
+  參照、連結或提及；`SKILL.md` 要能被獨立閱讀、獨立套用。
+- 章節標題與編號跟本文件（§01～§12）一一對應，方便逐節核對轉換有沒有
+  漏掉規則。
+- frontmatter 的 `name` 維持 `mdp-dotnet-architecture` 不變；`description`
+  依「這份規範管什麼、什麼時候要讀」重寫，不綁定任何專案名稱、不提
+  `architecture.md`。
+- 保留／重寫「使用時機」「新增 Entity 檢查清單」「自我檢查清單」這幾個
+  給 AI 執行用的操作段落，清單裡的路徑與命名一樣改用 `{Domain}`／
+  `{Entity}` 佔位符。
+- 必須包含「自我檢查清單（寫完程式碼後逐條核對）」這個段落，逐條對應
+  §01～§12 各節規則，缺這段視同轉換不完整。
+
+**說明**
+
+`SKILL.md` 定位是「AI 套用規則時的操作版」，只留規則本身與可執行的檢查
+清單，不重複本文件的範例／說明，避免兩份文件維護時互相拖累；具體程式碼
+範例、設計理由留在這份 `architecture.md`（唯一正本）即可，需要時人類或
+AI 直接回來看這裡。
