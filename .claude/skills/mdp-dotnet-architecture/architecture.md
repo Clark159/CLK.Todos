@@ -20,7 +20,7 @@
 10. [Repository 設計規範](#10-repository-設計規範)
 11. [Entity 設計規範](#11-entity-設計規範)
 12. [Dependency Injection 設計規範](#12-dependency-injection-設計規範)
-13. [SKILL.md 轉換規範](#13-skillmd-轉換規範)
+13. [SKILL 轉換規範](#13-skillmd-轉換規範)
 
 ## 01. Workspace 設計規範
 
@@ -61,13 +61,6 @@ CLK.Todos/                   repo 根目錄
     ├── CLK.Todos.Accesses/
     └── CLK.Todos.WebApp/
 ```
-
-**說明**
-
-依用途分類，避免根目錄堆滿雜項檔案。規則本文改放進 Skill 資料夾，是因為
-它「本來就只有一份」——`SKILL.md` 不重抄規則內容，只當成套用規則時的操作
-指引與檢查清單，實際規則文字只在 `architecture.md` 存在一次；擺在 `docs/`
-底下反而會讓人以為那才是正本，另外在 Skill 資料夾裡還要再放一份摘要副本。
 
 ## 02. Architecture 設計規範
 
@@ -705,7 +698,7 @@ Domain／Access 兩層都不持有跟單一 HTTP 請求綁定的狀態——Repo
 都重新建立一整條相依鏈；也讓「所有 Repository 實作的生命週期規則一致」這
 件事，不因為 Mock 換成真實資料庫實作而被打破。
 
-## 13. SKILL.md 轉換規範
+## 13. SKILL 轉換規範
 
 當使用者要求「把 architecture.md 轉換／翻譯成 SKILL.md」時，依下列規則
 重新生成同資料夾的 `SKILL.md`（每次都整份重寫，不做局部修補、不留舊
