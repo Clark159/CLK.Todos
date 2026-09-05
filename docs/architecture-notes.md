@@ -55,8 +55,7 @@ CLK.Todos/                   repo 根目錄
 
 **說明**
 
-repo 根目錄依用途分類（原始碼／文件／版控設定），`src/`／`docs/`／未來的
-`tests/` 平行對稱，避免根目錄堆滿雜項檔案。
+依用途分類，避免根目錄堆滿雜項檔案。
 
 ## 2. Architecture 設計規則
 
@@ -257,8 +256,7 @@ public class TodoContext
 
 **說明**
 
-參數命名可直接從注入型別反推，不用另外設計命名規則；`// Default` 讓建構子
-清楚分成合約檢查跟賦值兩階段。
+`// Default` 讓建構子清楚分成合約檢查跟賦值兩階段。
 
 ## 7. Properties 設計規則
 
@@ -419,13 +417,12 @@ builder.Services.AddSingleton<TodoContext>();
 - 刪除方法一律叫 `Remove`，不叫 `Delete`。
 - 查詢命名：`Find` 開頭查單筆（回傳 `{Entity}?`）；`FindAll` 開頭查
   多筆（回傳 `IReadOnlyList<{Entity}>`）。
-- 失敗語意依方法類型分兩種，不混用：
-  - Query 方法（`Find` 開頭）用回傳值本身表達「找不到」（`null`／空
-    集合）。
-  - Command 方法（`Add`／`Update`／`Remove`）一律回傳 `void`，找不到
-    對應資料就直接丟例外（`KeyNotFoundException`）。
-  - 例外要在哪一層被攔截、轉換成什麼樣的 HTTP 回應，先不在這份文件
-    規範，留待之後訂錯誤處理規則時再一併決定。
+- 失敗語意依方法類型分兩種，不混用：Query 方法（`Find` 開頭）用回傳值
+  本身表達「找不到」（`null`／空集合）；Command 方法（`Add`／`Update`／
+  `Remove`）一律回傳 `void`，找不到對應資料就直接丟例外
+  （`KeyNotFoundException`）。
+- 例外要在哪一層被攔截、轉換成什麼樣的 HTTP 回應，先不在這份文件規範，
+  留待之後訂錯誤處理規則時再一併決定。
 - Repository 只放存取資料的方法（CRUD＋查詢），不放業務邏輯／狀態轉換
   （例如「切換完成狀態」）。不要在 Repository 開
   `Toggle{XX}(Guid {entity}Id)` 這種直接用 id 操作、把邏輯藏在 Repository
