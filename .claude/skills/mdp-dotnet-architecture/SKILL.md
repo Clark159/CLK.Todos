@@ -3,7 +3,7 @@ name: mdp-dotnet-architecture
 description: .NET 專案通用設計規範（目錄分層、Namespace、Class 成員排序、Constructor/Method 慣例、Context／Repository／Entity／DI 規則）。撰寫或修改任何 .NET 專案的 .cs 檔案（含 Domain／Access／Host 層）前必讀，確保產出符合本規範。
 user-invocable: true
 metadata:
-  created: "2026-09-05 22:08:10 +0800"
+  created: "2026-09-05 22:24:30 +0800"
 ---
 
 # .NET 設計規範（AI 執行版）
@@ -160,7 +160,7 @@ metadata:
 
 - 命名：介面 `I{Entity}Repository`；非持久化實作
   `Mock{Entity}{介面名}`；真實資料庫實作（尚未使用，先預留）
-  `{技術}{Entity}{介面名}`（例如 EF Core 實作）。
+  `{技術}{Entity}{介面名}`（例如 `Ef{Entity}Repository`）。
 - 方法順序固定：新增 → 修改 → 刪除 → 查單筆 → 查全部 → 查全部（有條
   件）。
 - 刪除方法一律叫 `Remove`，不叫 `Delete`。
@@ -181,8 +181,7 @@ IReadOnlyList<{Entity}> FindAll();
 IReadOnlyList<{Entity}> FindAllByXX();
 ```
 
-- `Add` 不用額外檢查主鍵是否已存在（外部提供的 GUIDv7 碰撞機率低到可忽
-  略）。
+- `Add` 不用額外檢查主鍵是否已存在。
 - `Add` 把 `CreateTime`／`UpdateTime` 都重新蓋上 `DateTime.UtcNow`，不信
   任物件建構當下的預設值。
 - `Update` 維持 `CreateTime` 既有值不覆寫，只把 `UpdateTime` 重新蓋上，
@@ -190,16 +189,15 @@ IReadOnlyList<{Entity}> FindAllByXX();
 - 失敗語意依方法類型分兩種，不混用：Query 方法（`Find` 開頭）用回傳值
   本身表達「找不到」（`null`／空集合）；Command 方法（`Add`／`Update`／
   `Remove`）一律回傳 `void`，找不到對應資料就直接丟例外
-  （`KeyNotFoundException`）——Command 呼叫前理應已經用 `FindById` 確認
-  過資料存在，這裡若仍找不到代表資料在兩次操作之間被異動，屬於例外狀
-  況。
+  （`KeyNotFoundException`）。
+- 例外要在哪一層被攔截、轉換成什麼樣的 HTTP 回應，先不在這份規範裡，留
+  待之後訂錯誤處理規則時再一併決定。
 - Repository 只放存取資料的方法（CRUD＋查詢），不放業務邏輯／狀態轉換。
   不要在 Repository 開 `Toggle{XX}(Guid {entity}Id)` 這種直接用 id 操
   作、把邏輯藏在 Repository 裡的方法。
 - 真實資料庫實作建構子注入 `IDbContextFactory<{Domain}DbContext>`，每個
   方法內用 `using (...) { }`（不用 `using var`）建立短命 `DbContext`，
-  區塊結束就 `Dispose`——因為 Repository 實作全部走 Singleton，
-  `DbContext` 本身不是 thread-safe、不能跟著 Singleton 活整個生命週期。
+  區塊結束就 `Dispose`。
 
 ## 11. Entity
 
@@ -216,8 +214,7 @@ IReadOnlyList<{Entity}> FindAllByXX();
 - Entity 狀態轉換方法不用自己碰 `UpdateTime`，經過 Repository 的
   `Update` 就一定會蓋到。
 - 充血模型（Rich Domain Model）：跟 Entity 自身狀態有關的業務邏輯，一律
-  寫成 Entity 上的方法，不要寫在 Repository 或 Controller 裡——避免邏輯
-  散落各處、同一規則被實作兩三次。
+  寫成 Entity 上的方法，不要寫在 Repository 或 Controller 裡。
 - 呼叫端標準流程：Repository 查出 Entity → 呼叫 Entity 方法改變狀態 →
   Repository 存回去。
 - 業務欄位（非主鍵、非稽核時間戳記）一律用
@@ -230,28 +227,14 @@ IReadOnlyList<{Entity}> FindAllByXX();
   「不可為空白」跟「長度上限」要分開標註。
 - `ErrorMessage` 一律用「參數驗證」角度撰寫：陳述「這個屬性違反了什麼規
   則」（`不可以為空白`、`長度不可超過 N 字`），不要用引導使用者操作的祈
-  使句（不要 `請輸入 XXX`）——跟 Method／Constructor `// Contracts` 的合
+  使句（不要 `請輸入 XXX`）。跟 Method／Constructor `// Contracts` 的合
   約檢查（`ArgumentException` 系列）用同一種語氣，全專案「合約違規」一
-  律陳述規則本身，不指示下一步動作（引導文案屬於 UI 層，該由畫面層另外
-  處理）。
-
-```csharp
-public class {Entity}
-{
-    public Guid {Entity}Id { get; set; } = Guid.CreateVersion7();
-
-    public DateTime CreateTime { get; set; } = DateTime.UtcNow;
-
-    public DateTime UpdateTime { get; set; } = DateTime.UtcNow;
-}
-```
+  律陳述規則本身，不指示下一步動作。
 
 ## 12. Dependency Injection
 
 - Domain 層（`{Domain}Context`）與 Access 層（Repository 實作，不論
-  Mock 或真實資料庫）在 DI 容器裡一律用 Singleton 生命週期註冊——兩層都
-  不持有跟單一 HTTP 請求綁定的狀態，用 Singleton 避免每個請求都重新建立
-  一整條相依鏈。
+  Mock 或真實資料庫）在 DI 容器裡一律用 Singleton 生命週期註冊。
 - 所有 DI 註冊都寫在 Host 層專案的進入點檔案（例如
   `{Domain}.WebApp/Program.cs`）。
 - 註冊順序：先註冊 Repository 介面對實作，再註冊 `{Domain}Context`——跟
