@@ -99,8 +99,8 @@ repo 根目錄依用途分類（原始碼／文件／版控設定），`src/`／
 - 資料夾要不要拆，依專案性質決定：`{Domain}`（Domain）、
   `{Domain}.Accesses`（資料存取實作）不拆資料夾，檔案直接放專案根
   目錄，靠 namespace 就足夠辨識；`{Domain}.WebApp`（Host 層）維持 MVC
-  慣例資料夾（`Controllers/`／`Models/`／`Views/`），因為 Razor 慣例路由
-  依賴這個結構。不論拆不拆，資料夾都只是物理上分類檔案，不影響 namespace。
+  慣例資料夾（`Controllers/`／`Models/`／`Views/`）。不論拆不拆，資料夾都
+  只是物理上分類檔案，不影響 namespace。
 
 **範例**
 
@@ -121,7 +121,8 @@ public class Todo
 
 namespace 等於專案名稱，一個 `using` 就能取用整個專案型別，不受資料夾搬移
 影響；file-scoped 寫法減少縮排；`using`／`namespace` 順序符合官方慣例，
-避免跟 IDE、`dotnet format` 打架。
+避免跟 IDE、`dotnet format` 打架。`{Domain}.WebApp` 維持 MVC 慣例資料夾是
+因為 Razor 慣例路由依賴這個結構，屬於框架限制，不是這裡自訂的規則。
 
 ## 4. Class 設計規則
 
@@ -146,8 +147,7 @@ namespace 等於專案名稱，一個 `using` 就能取用整個專案型別，�
 - 每個分類標頭下第一個成員緊接著寫、不空行；同分類內成員之間空一行；
   不同分類之間空兩行。
 - `Imports`（`using`）不算進分類清單、不加標頭。
-- 類別內部呼叫自己（含繼承來）的方法或屬性，一律不加 `this.` 前綴——
-  欄位已經靠 `_` 前綴、參數靠命名跟成員區分，不需要 `this.` 才能辨識。
+- 類別內部呼叫自己（含繼承來）的方法或屬性，一律不加 `this.` 前綴。
   Controller 繼承自 `Controller` 的成員（`ModelState`、`HttpContext`、
   `View(...)`、`RedirectToAction(...)`）也一律不加。
 - 成員排序規則只管類別／介面內部排序，`Program.cs` 這種 top-level
@@ -185,15 +185,15 @@ public class TodoContext
 **說明**
 
 固定成員順序讓任何類別檔案都一致好讀；分類標頭方便快速定位（例如找
-`// Fields`）；省略 `this.` 減少視覺雜訊。
+`// Fields`）；省略 `this.` 減少視覺雜訊——欄位已經靠 `_` 前綴、參數靠
+命名跟成員區分，不需要 `this.` 才能辨識。
 
 ## 5. Field 設計規則
 
 **規則**
 
 - 命名：`_` + 參數命名（注入型別去掉介面字首 `I`，第一個字母轉小寫）。
-- `// Fields` 分類內，lock 物件排最前面，其餘欄位接在後面——代表這個
-  類別有執行緒安全考量。
+- `// Fields` 分類內，lock 物件排最前面，其餘欄位接在後面。
 
 **範例**
 
@@ -316,8 +316,8 @@ public ITodoRepository TodoRepository
     一行。
 - `// Return`：方法裡真正交付結果的最後一個 `return` 才標；guard
   clause 式的提前 `return`（例如 `if (todo is null) return NotFound();`）
-  不用標，因為已經被 `if` 自我解釋。回傳型別是 `void` 的方法（例如
-  `Update`／`Remove` 找不到就丟例外）沒有交付結果，不需要 `// Return`。
+  不用標。回傳型別是 `void` 的方法（例如 `Update`／`Remove` 找不到就丟
+  例外）沒有交付結果，不需要 `// Return`。
 - guard clause 一律省略大括號、寫成一行（不只限於 `// Contracts`，
   方法本體任何「不合法／找不到就提前 return 或丟例外」都比照辦理）。
 - 只有一個步驟的方法（例如 `FindById`）不需要額外標籤，`// Return` 本身
@@ -370,7 +370,8 @@ public IActionResult Create([Bind("Title")] Todo? todo = null)
 
 單字標籤讓方法步驟邊界一眼可辨，不用逐行讀；統一詞彙表避免同一操作各自
 表述（`FindById` vs. `Query`）；`// Contracts`／`// Return` 分別把輸入檢查、
-正常結果跟其他邏輯區隔開來。
+正常結果跟其他邏輯區隔開來。guard clause 式的提前 `return` 不標
+`// Return`，是因為已經被 `if` 自我解釋，不需要標籤重複說明。
 
 ## 9. Context 設計規則
 
@@ -413,23 +414,16 @@ builder.Services.AddSingleton<TodoContext>();
 
 - 命名：介面 `I{Entity}Repository`；非持久化實作 `Mock{Entity}{介面名}`；
   真實資料庫實作（尚未使用，先預留）`{技術}{Entity}{介面名}`（例如
-  `EfTodoRepository`）——一看類別名稱就知道它是不是「真的會持久化」，避免
-  Mock 跟真正接資料庫的實作混用同一套命名造成誤會。
+  `EfTodoRepository`）。
 - 方法順序固定：新增 → 修改 → 刪除 → 查單筆 → 查全部 → 查全部（有條件）。
 - 刪除方法一律叫 `Remove`，不叫 `Delete`。
 - 查詢命名：`Find` 開頭查單筆（回傳 `{Entity}?`）；`FindAll` 開頭查
   多筆（回傳 `IReadOnlyList<{Entity}>`）。
 - 失敗語意依方法類型分兩種，不混用：
   - Query 方法（`Find` 開頭）用回傳值本身表達「找不到」（`null`／空
-    集合），這是正常結果的一部分，不算例外，呼叫端本來就不確定資料在
-    不在。
+    集合）。
   - Command 方法（`Add`／`Update`／`Remove`）一律回傳 `void`，找不到
-    對應資料就直接丟例外（`KeyNotFoundException`），不用回傳值（例如
-    `bool`）表示成功與否，呼叫端也不用額外判斷。呼叫 `Update`／
-    `Remove` 前，呼叫端理應已經用 `FindById` 確認過資料存在（見
-    [Entity 設計規則](#11-entity-設計規則)的呼叫端標準流程），這裡若仍
-    找不到代表資料在兩次操作之間被異動（例如被其他請求刪除），屬於
-    例外狀況。
+    對應資料就直接丟例外（`KeyNotFoundException`）。
   - 例外要在哪一層被攔截、轉換成什麼樣的 HTTP 回應，先不在這份文件
     規範，留待之後訂錯誤處理規則時再一併決定。
 - Repository 只放存取資料的方法（CRUD＋查詢），不放業務邏輯／狀態轉換
@@ -440,9 +434,7 @@ builder.Services.AddSingleton<TodoContext>();
   `{Domain}.WebApp/Program.cs`）註冊一次
   `AddSingleton<I{Entity}Repository, Mock{Entity}Repository>()`。
 - 真實資料庫實作（`Ef{Entity}Repository`）維持 Singleton，不改成 Scoped：
-  `DbContext` 不是 thread-safe、生命週期本應是 Scoped，但為了讓所有
-  Repository 實作的 DI 生命週期規則保持一致（一律 Singleton），改成建構子
-  注入 `IDbContextFactory<{Domain}DbContext>`，而不是直接注入
+  建構子注入 `IDbContextFactory<{Domain}DbContext>`，而不是直接注入
   `{Domain}DbContext`；每個方法內部呼叫
   `_todoDbContextFactory.CreateDbContext()` 各自建立一個短命的
   `DbContext`，用 `using (...) { }` 明確大括號區塊包起來（不用
@@ -522,12 +514,23 @@ IReadOnlyList<{Entity}> FindAllByXX();
 
 **說明**
 
-固定方法順序與命名規則，讓任何 Repository 介面都好找、好猜回傳型別；業務
-邏輯留在 Entity（充血模型），Repository 維持單純的存取角色。所有 Repository
-實作統一用 Singleton 註冊，不用因為換成真實資料庫實作就另外設計一套
-Scoped 的規則；`IDbContextFactory` 把「`DbContext` 不是 thread-safe」這件事
-下放到每個方法自己處理（各自建立、各自 `Dispose`），DI 生命週期規則本身
-維持全專案一致。
+介面／實作分開命名，一看類別名稱就知道它是不是「真的會持久化」，避免
+Mock 跟真正接資料庫的實作混用同一套命名造成誤會；固定方法順序與命名規則，
+讓任何 Repository 介面都好找、好猜回傳型別；業務邏輯留在 Entity（充血
+模型），Repository 維持單純的存取角色。
+
+Query／Command 失敗語意分開，是因為兩者「找不到」的意義不同：Query 呼叫端
+本來就不確定資料在不在，找不到是正常結果的一部分；Command 呼叫前理應已經
+用 `FindById` 確認過資料存在（見 [Entity 設計規則](#11-entity-設計規則)
+的呼叫端標準流程），這裡若仍找不到代表資料在兩次操作之間被異動（例如被
+其他請求刪除），屬於例外狀況，用例外表達比回傳 `bool` 更能凸顯「這不是
+預期路徑」。
+
+所有 Repository 實作統一用 Singleton 註冊，不用因為換成真實資料庫實作就
+另外設計一套 Scoped 的規則；`DbContext` 本身不是 thread-safe、生命週期
+本應是 Scoped，但改成建構子注入 `IDbContextFactory` 之後，把這件事下放到
+每個方法自己處理（各自建立、各自 `Dispose`），DI 生命週期規則本身就能
+維持全專案一致，不用為了 EF 另開一套。
 
 ## 11. Entity 設計規則
 
@@ -540,8 +543,7 @@ Scoped 的規則；`IDbContextFactory` 把「`DbContext` 不是 thread-safe」�
   - 所有代表這個主鍵的變數／參數統一命名 `{entity}Id`，貫穿 Repository、
     Controller action 參數、MVC 路由樣板（`{{entity}Id?}`，不是泛用
     `{id?}`）、View 的 `asp-route-{entity}Id`，不留通用的 `id`。
-  - 不處理重複檢查：外部提供的 GUIDv7 碰撞機率可忽略，Repository 的
-    `Add` 不用額外檢查主鍵是否已存在。
+  - 不處理重複檢查：Repository 的 `Add` 不用額外檢查主鍵是否已存在。
 - 稽核時間戳記：`CreateTime`（不是 `CreatedAt`）、`UpdateTime`，型別
   `DateTime`，一律存 UTC，預設值 `DateTime.UtcNow`（不是 `DateTime.Now`）。
   這條是全專案通則，任何時間戳記都比照辦理；需要顯示當地時間才在畫面層轉換。
