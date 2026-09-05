@@ -94,9 +94,7 @@ src/
 **說明**
 
 分層相依單向、無循環參照，抽換任一層不影響下層；Domain 不依賴框架，可被
-多個 Host 層專案重複使用；介面與實作分離，換實作不動 Domain。各專案內部
-組織見對應章節：Namespace／Class（檔案與命名）、Context／Repository／Entity
-（Domain 內容）。
+多個 Host 層專案重複使用；介面與實作分離，換實作不動 Domain。
 
 ## 3. Namespace 設計規則
 
@@ -233,12 +231,12 @@ public class MockTodoRepository : ITodoRepository
 
 **規則**
 
-- 一律先用私有欄位承接注入物件，不要繞過欄位直接賦值給屬性或到處傳遞。
 - 參數命名：注入型別去掉介面字首 `I`（如果是介面），第一個字母轉小寫。
-- 合約檢查放方法本體最前面，用 `// Contracts` 標籤，格式規則跟方法共用；
-  建構子最常見的是參照型別參數的 not-null 檢查。
 - `// Default`：合約檢查後、把參數存進欄位的賦值陳述式，前面加這個
   標籤，跟 `// Contracts` 空一行、跟賦值本身不空行。
+- 一律先用私有欄位承接注入物件，不要繞過欄位直接賦值給屬性或到處傳遞。
+- 合約檢查放方法本體最前面，用 `// Contracts` 標籤，格式規則跟方法共用；
+  建構子最常見的是參照型別參數的 not-null 檢查。
 
 **範例**
 
@@ -275,9 +273,9 @@ public class TodoContext
 
 **規則**
 
+- 公開屬性命名：注入型別去掉介面字首 `I`，維持 PascalCase（不轉小寫）。
 - 一律用完整的 `get` / `return` 寫法，不用 `=>` expression-bodied（自動
   屬性 `{ get; set; }` 不受影響）。
-- 公開屬性命名：注入型別去掉介面字首 `I`，維持 PascalCase（不轉小寫）。
 - `get` 如果整個只有一行（只有一個 `return`），不加 `// Return`，整個
   `get` 縮成一行寫，比展開成三行好讀。
 
@@ -390,12 +388,12 @@ public IActionResult Create([Bind("Title")] Todo? todo = null)
 
 - `{Domain}Context` 是 Domain 的入口物件：把所有 Repository 介面透過建構子
   注入進來，用唯讀屬性對外提供。
-- 外部呼叫端（Controller 等）一律注入 `{Domain}Context` 來使用 Repository，
-  不直接注入個別 Repository 介面。
 - `{Domain}Context` 每個 `{Domain}` 只有一個，不隨 Entity 數量增加而變多：
   同一個 `{Domain}` 新增 Entity 時，是在既有的 Context 上多加一個
   Repository 屬性，不是另外開一個新的 Context；一個 `.sln` 有多個
   `{Domain}` 時，每個 `{Domain}` 各自有自己的 Context，彼此不共用。
+- 外部呼叫端（Controller 等）一律注入 `{Domain}Context` 來使用 Repository，
+  不直接注入個別 Repository 介面。
 
 **範例**
 
@@ -409,7 +407,7 @@ public IActionResult Create([Bind("Title")] Todo? todo = null)
 
 單一入口物件集中所有 Repository，呼叫端只需注入一個依賴；Context 的數量
 跟著 `{Domain}` 走，不跟著 Entity 走，避免 Entity 一多就要到處新增、注入
-一堆 Context；一個 `.sln` 有多個 `{Domain}` 時，Context 的數量也跟著變多。
+一堆 Context。
 
 ## 10. Repository 設計規則
 
@@ -513,15 +511,14 @@ Mock 跟真正接資料庫的實作混用同一套命名造成誤會；固定方
 
 Query／Command 失敗語意分開，是因為兩者「找不到」的意義不同：Query 呼叫端
 本來就不確定資料在不在，找不到是正常結果的一部分；Command 呼叫前理應已經
-用 `FindById` 確認過資料存在，這裡若仍找不到代表資料在兩次操作之間被異動（例如被
-其他請求刪除），屬於例外狀況，用例外表達比回傳 `bool` 更能凸顯「這不是
-預期路徑」。
+用 `FindById` 確認過資料存在，這裡若仍找不到代表資料在兩次操作之間被異動
+（例如被其他請求刪除），屬於例外狀況，用例外表達比回傳 `bool` 更能凸顯
+「這不是預期路徑」。
 
 `DbContext` 本身不是 thread-safe、生命週期本應是 Scoped，但這個專案的
 Repository 實作全部走 Singleton，所以改成建構子注入 `IDbContextFactory`，
-把「取得 `DbContext`」這件事下放
-到每個方法自己處理（各自建立、各自 `Dispose`），不用為了 EF 另開一套
-Scoped 的規則。
+把「取得 `DbContext`」這件事下放到每個方法自己處理（各自建立、各自
+`Dispose`），不用為了 EF 另開一套 Scoped 的規則。
 
 ## 11. Entity 設計規則
 
