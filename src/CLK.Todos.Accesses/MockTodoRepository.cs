@@ -11,7 +11,7 @@ public class MockTodoRepository : ITodoRepository
 
 
     // Methods
-    public Todo Add(Todo todo)
+    public void Add(Todo todo)
     {
         // Contracts
         ArgumentNullException.ThrowIfNull(todo);
@@ -23,13 +23,10 @@ public class MockTodoRepository : ITodoRepository
             todo.CreateTime = DateTime.UtcNow;
             todo.UpdateTime = DateTime.UtcNow;
             _todos.Add(todo);
-
-            // Return
-            return todo;
         }
     }
 
-    public bool Update(Todo todo)
+    public void Update(Todo todo)
     {
         // Contracts
         ArgumentNullException.ThrowIfNull(todo);
@@ -39,32 +36,26 @@ public class MockTodoRepository : ITodoRepository
         {
             // Search
             var entity = _todos.FirstOrDefault(t => t.TodoId == todo.TodoId);
-            if (entity is null) return false;
+            if (entity is null) throw new KeyNotFoundException($"Todo not found: {todo.TodoId}");
 
             // Execute
             entity.Title = todo.Title;
             entity.IsDone = todo.IsDone;
             entity.UpdateTime = DateTime.UtcNow;
-
-            // Return
-            return true;
         }
     }
 
-    public bool Remove(Guid todoId)
+    public void Remove(Guid todoId)
     {
         // Lock
         lock (_lock)
         {
             // Search
             var entity = _todos.FirstOrDefault(t => t.TodoId == todoId);
-            if (entity is null) return false;
+            if (entity is null) throw new KeyNotFoundException($"Todo not found: {todoId}");
 
             // Execute
             _todos.Remove(entity);
-
-            // Return
-            return true;
         }
     }
 

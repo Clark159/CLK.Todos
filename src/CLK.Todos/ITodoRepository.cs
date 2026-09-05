@@ -3,11 +3,11 @@ namespace CLK.Todos;
 public interface ITodoRepository
 {
     // Methods
-    Todo Add(Todo todo);
+    void Add(Todo todo);
 
-    bool Update(Todo todo);
+    void Update(Todo todo);
 
-    bool Remove(Guid todoId);
+    void Remove(Guid todoId);
 
     Todo? FindById(Guid todoId);
 

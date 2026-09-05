@@ -316,18 +316,20 @@ public ITodoRepository TodoRepository
     一行。
 - `// Return`：方法裡真正交付結果的最後一個 `return` 才標；guard
   clause 式的提前 `return`（例如 `if (todo is null) return NotFound();`）
-  不用標，因為已經被 `if` 自我解釋。
+  不用標，因為已經被 `if` 自我解釋。回傳型別是 `void` 的方法（例如
+  `Update`／`Remove` 找不到就丟例外）沒有交付結果，不需要 `// Return`。
 - guard clause 一律省略大括號、寫成一行（不只限於 `// Contracts`，
-  方法本體任何「不合法／找不到就提前 return」都比照辦理）。
+  方法本體任何「不合法／找不到就提前 return 或丟例外」都比照辦理）。
 - 只有一個步驟的方法（例如 `FindById`）不需要額外標籤，`// Return` 本身
   就夠。
 
 **範例**
 
-- `MockTodoRepository.Update`（查詢用 `// Search`、寫入用 `// Execute`）
+- `MockTodoRepository.Update`（查詢用 `// Search`、寫入用 `// Execute`；
+  找不到就丟例外，方法回傳 `void`）
 
 ```csharp
-public bool Update(Todo todo)
+public void Update(Todo todo)
 {
     // Contracts
     ArgumentNullException.ThrowIfNull(todo);
@@ -337,15 +339,12 @@ public bool Update(Todo todo)
     {
         // Search
         var entity = _todos.FirstOrDefault(t => t.TodoId == todo.TodoId);
-        if (entity is null) return false;
+        if (entity is null) throw new KeyNotFoundException($"Todo not found: {todo.TodoId}");
 
         // Execute
         entity.Title = todo.Title;
         entity.IsDone = todo.IsDone;
         entity.UpdateTime = DateTime.UtcNow;
-
-        // Return
-        return true;
     }
 }
 ```
@@ -420,6 +419,19 @@ builder.Services.AddSingleton<TodoContext>();
 - 刪除方法一律叫 `Remove`，不叫 `Delete`。
 - 查詢命名：`Find` 開頭查單筆（回傳 `{Entity}?`）；`FindAll` 開頭查
   多筆（回傳 `IReadOnlyList<{Entity}>`）。
+- 失敗語意依方法類型分兩種，不混用：
+  - Query 方法（`Find` 開頭）用回傳值本身表達「找不到」（`null`／空
+    集合），這是正常結果的一部分，不算例外，呼叫端本來就不確定資料在
+    不在。
+  - Command 方法（`Add`／`Update`／`Remove`）一律回傳 `void`，找不到
+    對應資料就直接丟例外（`KeyNotFoundException`），不用回傳值（例如
+    `bool`）表示成功與否，呼叫端也不用額外判斷。呼叫 `Update`／
+    `Remove` 前，呼叫端理應已經用 `FindById` 確認過資料存在（見
+    [Entity 設計規則](#11-entity-設計規則)的呼叫端標準流程），這裡若仍
+    找不到代表資料在兩次操作之間被異動（例如被其他請求刪除），屬於
+    例外狀況。
+  - 例外要在哪一層被攔截、轉換成什麼樣的 HTTP 回應，先不在這份文件
+    規範，留待之後訂錯誤處理規則時再一併決定。
 - Repository 只放存取資料的方法（CRUD＋查詢），不放業務邏輯／狀態轉換
   （例如「切換完成狀態」）。不要在 Repository 開
   `Toggle{XX}(Guid {entity}Id)` 這種直接用 id 操作、把邏輯藏在 Repository
@@ -474,7 +486,7 @@ public class EfTodoRepository : ITodoRepository
 
 
     // Methods
-    public Todo Add(Todo todo)
+    public void Add(Todo todo)
     {
         // Contracts
         ArgumentNullException.ThrowIfNull(todo);
@@ -487,9 +499,6 @@ public class EfTodoRepository : ITodoRepository
             todo.UpdateTime = DateTime.UtcNow;
             todoDbContext.Todos.Add(todo);
             todoDbContext.SaveChanges();
-
-            // Return
-            return todo;
         }
     }
 }
@@ -498,11 +507,11 @@ public class EfTodoRepository : ITodoRepository
 - 方法順序與命名樣板
 
 ```csharp
-{Entity} Add({Entity} entity);
+void Add({Entity} entity);
 
-bool Update({Entity} entity);
+void Update({Entity} entity);
 
-bool Remove(Guid {entity}Id);
+void Remove(Guid {entity}Id);
 
 {Entity}? FindByXX(Guid {entity}Id);
 
