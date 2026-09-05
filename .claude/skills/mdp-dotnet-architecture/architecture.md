@@ -576,6 +576,9 @@ Repository 實作全部走 Singleton，所以改成建構子注入 `IDbContextFa
   業務規則挑選（例如 `[Required]`、`[StringLength]`、`[EmailAddress]`），
   不能只靠 Controller 的 `ModelState.IsValid` 裸檢查，也不用自己在 Entity
   方法或 Controller 裡手寫等價的 if 判斷。
+- 不可為空白的字串屬性，要加上 `[Required(ErrorMessage = "不可以為空白")]`；
+  只加 `[StringLength]` 不會擋空字串或 `null`，兩者是互補而非互斥的規則，
+  「不可為空白」跟「長度上限」要分開標註。
 - `ErrorMessage` 一律用「參數驗證」角度撰寫：陳述「這個屬性違反了什麼
   規則」（`不可以為空白`、`長度不可超過 N 字`），不要用引導使用者
   操作的祈使句（不要 `請輸入 XXX`）。跟 Method／Constructor `// Contracts`
