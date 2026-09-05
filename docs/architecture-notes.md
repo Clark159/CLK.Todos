@@ -4,9 +4,9 @@
 撰寫慣例（Namespace／Class／Constructor／Method），以及 Domain 層的設計規則
 （Context／Repository／Entity）。
 
-> 每一節統一用「規則 → 範例 → 說明」整理。**規則一律用 `{Solution}`、
-> `{Entity}` 佔位符描述，不綁定具體名稱**。**範例**具體標註 CLK.Todos 專案裡
-> `Todo` 這個 Entity 示範規則的樣子，是規則的**一個實例**，不是規則本身。
+> 每一節統一用「規則 → 範例 → 說明」整理。規則一律用 `{Domain}`、
+> `{Entity}` 佔位符描述，不綁定具體名稱。範例具體標註 CLK.Todos 專案裡
+> `Todo` 這個 Entity 示範規則的樣子，是規則的一個實例，不是規則本身。
 
 ## 目錄
 
@@ -26,17 +26,19 @@
 
 **規則**
 
-- **`src/`**：所有原始碼專案放這裡，`{Solution}.sln` 跟所有專案同一層，
-  不放 repo 根目錄。之後新增測試專案，一律放 `tests/`，跟 `src/` 同一層。
-- **`docs/`**：架構規則、設計文件這類跟程式碼相關但不參與建置的文件放這裡
+- `src/`：所有原始碼專案放這裡，`.sln` 跟所有專案同一層，不放 repo
+  根目錄。之後新增測試專案，一律放 `tests/`，跟 `src/` 同一層。
+- 一個 `.sln` 可以包含多個 `{Domain}`（多個 Bounded Context）：`.sln`
+  檔名對應 repo 本身，不綁定任何一個 `{Domain}`。
+- `docs/`：架構規則、設計文件這類跟程式碼相關但不參與建置的文件放這裡
   （例如這份 `architecture-notes.md`）。
-- **`README.md`**：專案說明，放 repo 根目錄。
-- **`.gitignore`**：Git 版本控制排除清單，放 repo 根目錄。
-- **repo 根目錄只留上述這類跟建置無關的東西**，不放任何 `.sln`／專案檔案。
+- `README.md`：專案說明，放 repo 根目錄。
+- `.gitignore`：Git 版本控制排除清單，放 repo 根目錄。
+- repo 根目錄只留上述這類跟建置無關的東西，不放任何 `.sln`／專案檔案。
 
 **範例**
 
-- repo 根目錄配置（本專案：CLK.Todos）
+- repo 根目錄配置（本專案：CLK.Todos，目前只有 `Todo` 一個 `{Domain}`）
 
 ```
 CLK.Todos/                   repo 根目錄
@@ -60,20 +62,22 @@ repo 根目錄依用途分類（原始碼／文件／版控設定），`src/`／
 
 **規則**
 
-- **`{Solution}`**：**Domain 層**，類別庫專案。提供 Entity、Repository 介面
+- `{Domain}`：Domain 層，類別庫專案。提供 Entity、Repository 介面
   與 Context，定義業務核心邏輯與規格，不依賴任何框架。
-- **`{Solution}.Accesses`**：**Access 層**，類別庫專案。提供 Repository 介面
+- `{Domain}.Accesses`：Access 層，類別庫專案。提供 Repository 介面
   的實作，負責實際資料存取（資料庫、記憶體等）。
-- **`{Solution}.WebApp`**：**Host 層**，ASP.NET MVC 專案。提供網頁使用者
+- `{Domain}.WebApp`：Host 層，ASP.NET MVC 專案。提供網頁使用者
   介面。
-- **`{Solution}.BlazorApp`**：**Host 層**，Blazor 專案。提供互動式網頁應用
+- `{Domain}.BlazorApp`：Host 層，Blazor 專案。提供互動式網頁應用
   的使用者介面。
-- **`{Solution}.ConsoleApp`**：**Host 層**，Console 專案。提供命令列工具
+- `{Domain}.ConsoleApp`：Host 層，Console 專案。提供命令列工具
   （例如批次匯入、排程工作），無使用者介面。
-- **分層相依**：Domain 層不相依其他任何層；Access 層相依 Domain 層；
+- 分層相依：Domain 層不相依其他任何層；Access 層相依 Domain 層；
   Host 層相依 Domain 層＋Access 層。
-- 同一個 `{Solution}.sln` 可以同時有多個 Host 層專案（例如網站＋批次匯入用
-  的 Console 工具），都依賴同一個 `{Solution}.Accesses`／`{Solution}`。
+- 同一個 `{Domain}` 可以同時有多個 Host 層專案（例如網站＋批次匯入用的
+  Console 工具），都依賴同一個 `{Domain}.Accesses`／`{Domain}`。
+- 一個 `.sln` 可以同時有多組 `{Domain}`／`{Domain}.Accesses`／Host 層
+  專案，各組 `{Domain}` 之間彼此獨立、不共用 Repository 介面或 Context。
 
 **說明**
 
@@ -86,16 +90,16 @@ repo 根目錄依用途分類（原始碼／文件／版控設定），`src/`／
 
 **規則**
 
-- **每個專案內所有檔案，namespace 一律等於專案名稱本身，不因資料夾而加後綴**
-  （例如 `{Solution}.WebApp` 裡不管檔案放在哪個資料夾，namespace 都是
-  `{Solution}.WebApp`）。
-- **一律用 file-scoped 寫法**（`namespace X;`，不用大括號區塊）。
-- **`using` 放在檔案最上面，跟 `namespace` 之間空一行**（C# 官方範本順序，
+- 每個專案內所有檔案，namespace 一律等於專案名稱本身，不因資料夾而加後綴
+  （例如 `{Domain}.WebApp` 裡不管檔案放在哪個資料夾，namespace 都是
+  `{Domain}.WebApp`）。
+- 一律用 file-scoped 寫法（`namespace X;`，不用大括號區塊）。
+- `using` 放在檔案最上面，跟 `namespace` 之間空一行（C# 官方範本順序，
   不要反過來）；沒有 `using` 的檔案直接從 `namespace` 開始。
-- **資料夾要不要拆，依專案性質決定**：`{Solution}`（Domain）、
-  `{Solution}.Accesses`（資料存取實作）**不拆資料夾**，檔案直接放專案根
-  目錄，靠 namespace 就足夠辨識；`{Solution}.WebApp`（Host 層）**維持 MVC
-  慣例資料夾**（`Controllers/`／`Models/`／`Views/`），因為 Razor 慣例路由
+- 資料夾要不要拆，依專案性質決定：`{Domain}`（Domain）、
+  `{Domain}.Accesses`（資料存取實作）不拆資料夾，檔案直接放專案根
+  目錄，靠 namespace 就足夠辨識；`{Domain}.WebApp`（Host 層）維持 MVC
+  慣例資料夾（`Controllers/`／`Models/`／`Views/`），因為 Razor 慣例路由
   依賴這個結構。不論拆不拆，資料夾都只是物理上分類檔案，不影響 namespace。
 
 **範例**
@@ -123,7 +127,7 @@ namespace 等於專案名稱，一個 `using` 就能取用整個專案型別，�
 
 **規則**
 
-- 類別（含介面）內成員照以下順序分類，**只列出實際有內容的分類**：
+- 類別（含介面）內成員照以下順序分類，只列出實際有內容的分類：
 
   ```
   // Singleton
@@ -142,11 +146,11 @@ namespace 等於專案名稱，一個 `using` 就能取用整個專案型別，�
 - 每個分類標頭下第一個成員緊接著寫、不空行；同分類內成員之間空一行；
   不同分類之間空兩行。
 - `Imports`（`using`）不算進分類清單、不加標頭。
-- **類別內部呼叫自己（含繼承來）的方法或屬性，一律不加 `this.` 前綴**——
+- 類別內部呼叫自己（含繼承來）的方法或屬性，一律不加 `this.` 前綴——
   欄位已經靠 `_` 前綴、參數靠命名跟成員區分，不需要 `this.` 才能辨識。
   Controller 繼承自 `Controller` 的成員（`ModelState`、`HttpContext`、
   `View(...)`、`RedirectToAction(...)`）也一律不加。
-- 成員排序規則只管類別／介面**內部**排序，`Program.cs` 這種 top-level
+- 成員排序規則只管類別／介面內部排序，`Program.cs` 這種 top-level
   statements 進入點檔案不適用。
 
 **範例**
@@ -187,8 +191,8 @@ public class TodoContext
 
 **規則**
 
-- **命名**：`_` + 參數命名（注入型別去掉介面字首 `I`，第一個字母轉小寫）。
-- **`// Fields` 分類內，lock 物件排最前面**，其餘欄位接在後面——代表這個
+- 命名：`_` + 參數命名（注入型別去掉介面字首 `I`，第一個字母轉小寫）。
+- `// Fields` 分類內，lock 物件排最前面，其餘欄位接在後面——代表這個
   類別有執行緒安全考量。
 
 **範例**
@@ -213,15 +217,15 @@ public class MockTodoRepository : ITodoRepository
 
 ## 6. Constructor 設計規則
 
-適用於**所有**類別，不限於某一層。
+適用於所有類別，不限於某一層。
 
 **規則**
 
-- **一律先用私有欄位承接注入物件**，不要繞過欄位直接賦值給屬性或到處傳遞。
-- **參數命名**：注入型別去掉介面字首 `I`（如果是介面），第一個字母轉小寫。
-- **合約檢查放方法本體最前面**，用 `// Contracts` 標籤，格式規則跟方法共用；
+- 一律先用私有欄位承接注入物件，不要繞過欄位直接賦值給屬性或到處傳遞。
+- 參數命名：注入型別去掉介面字首 `I`（如果是介面），第一個字母轉小寫。
+- 合約檢查放方法本體最前面，用 `// Contracts` 標籤，格式規則跟方法共用；
   建構子最常見的是參照型別參數的 not-null 檢查。
-- **`// Default`**：合約檢查後、把參數存進欄位的賦值陳述式，前面加這個
+- `// Default`：合約檢查後、把參數存進欄位的賦值陳述式，前面加這個
   標籤，跟 `// Contracts` 空一行、跟賦值本身不空行。
 
 **範例**
@@ -260,11 +264,11 @@ public class TodoContext
 
 **規則**
 
-- **一律用完整的 `get` / `return` 寫法，不用 `=>` expression-bodied**（自動
+- 一律用完整的 `get` / `return` 寫法，不用 `=>` expression-bodied（自動
   屬性 `{ get; set; }` 不受影響）。
-- **公開屬性命名**：注入型別去掉介面字首 `I`，維持 PascalCase（不轉小寫）。
-- **`get` 如果整個只有一行**（只有一個 `return`），**不加 `// Return`，整個
-  `get` 縮成一行寫**，比展開成三行好讀。
+- 公開屬性命名：注入型別去掉介面字首 `I`，維持 PascalCase（不轉小寫）。
+- `get` 如果整個只有一行（只有一個 `return`），不加 `// Return`，整個
+  `get` 縮成一行寫，比展開成三行好讀。
 
 **範例**
 
@@ -287,9 +291,9 @@ public ITodoRepository TodoRepository
 
 **規則**
 
-- **方法本體避免深巢狀，拆成平鋪區塊**，每個區塊前面加一個單字小標籤，
-  第一個標籤前不空行、後面每個標籤前空一行；**標籤只提示角色，不要把邏輯
-  寫進註解裡**。優先從下表挑字：
+- 方法本體避免深巢狀，拆成平鋪區塊，每個區塊前面加一個單字小標籤，
+  第一個標籤前不空行、後面每個標籤前空一行；標籤只提示角色，不要把邏輯
+  寫進註解裡。優先從下表挑字：
 
   | 標籤 | 用途 |
   |---|---|
@@ -299,9 +303,10 @@ public ITodoRepository TodoRepository
   | `// Execute` | 執行核心動作（Repository 的 `Add`／`Update`／`Remove`，或 Entity 狀態轉換） |
   | `// Return` | 方法裡代表「正常結果」的最後一個 `return` |
   | `// Lock` | 進入 `lock` 區塊做執行緒同步 |
-  | `// Variables`／`// Initialize`／`// Define`／`// Require`／`// Arguments`／`// Notify`／`// Raise` | 尚無實例，先保留定義，遇到對應場景再套用 |
+  | `// Create` | 建立一個接下來要用的物件實例（例如 `IDbContextFactory` 建立 `DbContext`） |
+  | `// Variables`／`// Define`／`// Require`／`// Arguments`／`// Notify`／`// Raise` | 尚無實例，先保留定義，遇到對應場景再套用 |
 
-- **`// Contracts`**：方法（或建構子）參數的合約檢查放最前面：
+- `// Contracts`：方法（或建構子）參數的合約檢查放最前面：
   - 參照型別參數：不能為 `null` → `ArgumentNullException.ThrowIfNull(參數)`。
   - 字串參數：不能為 `null`／空白 → `ArgumentException.ThrowIfNullOrWhiteSpace(參數)`。
   - 值型別參數（`int`、`bool`、`DateTime`）不需要檢查。
@@ -309,10 +314,10 @@ public ITodoRepository TodoRepository
     合約檢查，放進同一個 `// Contracts` 底下。
   - 每個檢查獨立一行，不用 `||`／`&&` 合併；檢查之間不空行，跟後面邏輯空
     一行。
-- **`// Return`**：方法裡真正交付結果的最後一個 `return` 才標；guard
+- `// Return`：方法裡真正交付結果的最後一個 `return` 才標；guard
   clause 式的提前 `return`（例如 `if (todo is null) return NotFound();`）
   不用標，因為已經被 `if` 自我解釋。
-- **guard clause 一律省略大括號、寫成一行**（不只限於 `// Contracts`，
+- guard clause 一律省略大括號、寫成一行（不只限於 `// Contracts`，
   方法本體任何「不合法／找不到就提前 return」都比照辦理）。
 - 只有一個步驟的方法（例如 `FindById`）不需要額外標籤，`// Return` 本身
   就夠。
@@ -372,12 +377,16 @@ public IActionResult Create([Bind("Title")] Todo? todo = null)
 
 **規則**
 
-- `{Solution}Context` 是 Domain 的入口物件：把所有 Repository 介面透過建構子
+- `{Domain}Context` 是 Domain 的入口物件：把所有 Repository 介面透過建構子
   注入進來，用唯讀屬性對外提供。
-- 外部呼叫端（Controller 等）一律注入 `{Solution}Context` 來使用 Repository，
-  **不直接注入個別 Repository 介面**。
-- 在 Host 層專案的進入點檔案（例如 `{Solution}.WebApp/Program.cs`）用
-  `AddSingleton<{Solution}Context>()` 註冊。
+- 外部呼叫端（Controller 等）一律注入 `{Domain}Context` 來使用 Repository，
+  不直接注入個別 Repository 介面。
+- 在 Host 層專案的進入點檔案（例如 `{Domain}.WebApp/Program.cs`）用
+  `AddSingleton<{Domain}Context>()` 註冊。
+- `{Domain}Context` 每個 `{Domain}` 只有一個，不隨 Entity 數量增加而變多：
+  同一個 `{Domain}` 新增 Entity 時，是在既有的 Context 上多加一個
+  Repository 屬性，不是另外開一個新的 Context；一個 `.sln` 有多個
+  `{Domain}` 時，每個 `{Domain}` 各自有自己的 Context，彼此不共用。
 
 **範例**
 
@@ -387,30 +396,47 @@ public IActionResult Create([Bind("Title")] Todo? todo = null)
 builder.Services.AddSingleton<TodoContext>();
 ```
 
+- `{Domain}` 只有一個 Entity 時的巧合命名（本專案：CLK.Todos 目前只有
+  `Todo` 一個 `{Domain}`，`{Domain}` 新增 `Category` Entity 時，是在
+  `TodoContext` 上多加一個 `ICategoryRepository` 屬性，不是另外開一個
+  `CategoryContext`；`TodoContext` 剛好跟 `{Entity}Context` 同名只是巧合，
+  不代表 Context 是跟著 Entity 命名的）
+
 **說明**
 
-單一入口物件集中所有 Repository，呼叫端只需注入一個依賴；行為貼近未來
-導入 EF Core `DbContext` 的用法，轉換成本較低。
+單一入口物件集中所有 Repository，呼叫端只需注入一個依賴；Context 的數量
+跟著 `{Domain}` 走，不跟著 Entity 走，避免 Entity 一多就要到處新增、注入
+一堆 Context；一個 `.sln` 有多個 `{Domain}` 時，Context 的數量也跟著變多。
 
 ## 10. Repository 設計規則
 
 **規則**
 
-- **命名**：介面 `I{Entity}Repository`；非持久化實作 `Mock{Entity}{介面名}`；
+- 命名：介面 `I{Entity}Repository`；非持久化實作 `Mock{Entity}{介面名}`；
   真實資料庫實作（尚未使用，先預留）`{技術}{Entity}{介面名}`（例如
   `EfTodoRepository`）——一看類別名稱就知道它是不是「真的會持久化」，避免
   Mock 跟真正接資料庫的實作混用同一套命名造成誤會。
-- **方法順序固定**：新增 → 修改 → 刪除 → 查單筆 → 查全部 → 查全部（有條件）。
-- **刪除方法一律叫 `Remove`，不叫 `Delete`。**
-- **查詢命名**：`Find` 開頭查**單筆**（回傳 `{Entity}?`）；`FindAll` 開頭查
-  **多筆**（回傳 `IReadOnlyList<{Entity}>`）。
-- **Repository 只放存取資料的方法（CRUD＋查詢），不放業務邏輯／狀態轉換**
-  （例如「切換完成狀態」）。**不要**在 Repository 開
+- 方法順序固定：新增 → 修改 → 刪除 → 查單筆 → 查全部 → 查全部（有條件）。
+- 刪除方法一律叫 `Remove`，不叫 `Delete`。
+- 查詢命名：`Find` 開頭查單筆（回傳 `{Entity}?`）；`FindAll` 開頭查
+  多筆（回傳 `IReadOnlyList<{Entity}>`）。
+- Repository 只放存取資料的方法（CRUD＋查詢），不放業務邏輯／狀態轉換
+  （例如「切換完成狀態」）。不要在 Repository 開
   `Toggle{XX}(Guid {entity}Id)` 這種直接用 id 操作、把邏輯藏在 Repository
   裡的方法。
-- **DI 註冊**：每個 Repository 介面對實作，在 Host 層專案的進入點檔案（例如
-  `{Solution}.WebApp/Program.cs`）註冊一次
+- DI 註冊：每個 Repository 介面對實作，在 Host 層專案的進入點檔案（例如
+  `{Domain}.WebApp/Program.cs`）註冊一次
   `AddSingleton<I{Entity}Repository, Mock{Entity}Repository>()`。
+- 真實資料庫實作（`Ef{Entity}Repository`）維持 Singleton，不改成 Scoped：
+  `DbContext` 不是 thread-safe、生命週期本應是 Scoped，但為了讓所有
+  Repository 實作的 DI 生命週期規則保持一致（一律 Singleton），改成建構子
+  注入 `IDbContextFactory<{Domain}DbContext>`，而不是直接注入
+  `{Domain}DbContext`；每個方法內部呼叫
+  `_todoDbContextFactory.CreateDbContext()` 各自建立一個短命的
+  `DbContext`，用 `using (...) { }` 明確大括號區塊包起來（不用
+  `using var` 宣告式寫法），區塊結束就 `Dispose`。
+  `AddDbContextFactory<{Domain}DbContext>()` 搭配
+  `AddSingleton<I{Entity}Repository, Ef{Entity}Repository>()` 註冊。
 
 **範例**
 
@@ -419,6 +445,54 @@ builder.Services.AddSingleton<TodoContext>();
 
 ```csharp
 builder.Services.AddSingleton<ITodoRepository, MockTodoRepository>();
+```
+
+- `EfTodoRepository`：Singleton 搭配 `IDbContextFactory`
+
+```csharp
+builder.Services.AddDbContextFactory<TodoDbContext>(options =>
+    options.UseSqlServer(connectionString));
+builder.Services.AddSingleton<ITodoRepository, EfTodoRepository>();
+```
+
+```csharp
+public class EfTodoRepository : ITodoRepository
+{
+    // Fields
+    private readonly IDbContextFactory<TodoDbContext> _todoDbContextFactory;
+
+
+    // Constructors
+    public EfTodoRepository(IDbContextFactory<TodoDbContext> todoDbContextFactory)
+    {
+        // Contracts
+        ArgumentNullException.ThrowIfNull(todoDbContextFactory);
+
+        // Default
+        _todoDbContextFactory = todoDbContextFactory;
+    }
+
+
+    // Methods
+    public Todo Add(Todo todo)
+    {
+        // Contracts
+        ArgumentNullException.ThrowIfNull(todo);
+
+        // Create
+        using (var todoDbContext = _todoDbContextFactory.CreateDbContext())
+        {
+            // Execute
+            todo.CreateTime = DateTime.UtcNow;
+            todo.UpdateTime = DateTime.UtcNow;
+            todoDbContext.Todos.Add(todo);
+            todoDbContext.SaveChanges();
+
+            // Return
+            return todo;
+        }
+    }
+}
 ```
 
 - 方法順序與命名樣板
@@ -440,21 +514,27 @@ IReadOnlyList<{Entity}> FindAllByXX();
 **說明**
 
 固定方法順序與命名規則，讓任何 Repository 介面都好找、好猜回傳型別；業務
-邏輯留在 Entity（充血模型），Repository 維持單純的存取角色。
+邏輯留在 Entity（充血模型），Repository 維持單純的存取角色。所有 Repository
+實作統一用 Singleton 註冊，不用因為換成真實資料庫實作就另外設計一套
+Scoped 的規則；`IDbContextFactory` 把「`DbContext` 不是 thread-safe」這件事
+下放到每個方法自己處理（各自建立、各自 `Dispose`），DI 生命週期規則本身
+維持全專案一致。
 
 ## 11. Entity 設計規則
 
 **規則**
 
-- **主鍵**：屬性命名 `{Entity}Id`（不要單純的 `Id`），型別 `Guid`，用
+- 主鍵：屬性命名 `{Entity}Id`（不要單純的 `Id`），型別 `Guid`，用
   `Guid.CreateVersion7()` 產生（不是隨機無序的 `Guid.NewGuid()`），不用
   `int` 流水號。由 Entity 屬性預設值在建立當下產生、外部提供，Repository
   不再自己產生。
   - 所有代表這個主鍵的變數／參數統一命名 `{entity}Id`，貫穿 Repository、
     Controller action 參數、MVC 路由樣板（`{{entity}Id?}`，不是泛用
     `{id?}`）、View 的 `asp-route-{entity}Id`，不留通用的 `id`。
-- **稽核時間戳記**：`CreateTime`（不是 `CreatedAt`）、`UpdateTime`，型別
-  `DateTime`，**一律存 UTC**，預設值 `DateTime.UtcNow`（不是 `DateTime.Now`）。
+  - 不處理重複檢查：外部提供的 GUIDv7 碰撞機率可忽略，Repository 的
+    `Add` 不用額外檢查主鍵是否已存在。
+- 稽核時間戳記：`CreateTime`（不是 `CreatedAt`）、`UpdateTime`，型別
+  `DateTime`，一律存 UTC，預設值 `DateTime.UtcNow`（不是 `DateTime.Now`）。
   這條是全專案通則，任何時間戳記都比照辦理；需要顯示當地時間才在畫面層轉換。
   - `Add`：`CreateTime`／`UpdateTime` 都在 Repository 的 `Add` 方法寫入
     當下重新蓋上 `DateTime.UtcNow`，不信任物件建構當下的預設值。
@@ -462,10 +542,10 @@ IReadOnlyList<{Entity}> FindAllByXX();
     方法在寫入當下重新蓋上，不信任呼叫端傳進來的值。
   - Entity 上的狀態轉換方法（例如 `ToggleDone()`）不用自己碰
     `UpdateTime`——經過 Repository 的 `Update` 就一定會蓋到。
-- **充血模型（Rich Domain Model）**：跟 Entity 自身狀態有關的業務邏輯，一律
+- 充血模型（Rich Domain Model）：跟 Entity 自身狀態有關的業務邏輯，一律
   寫成 Entity 上的方法，不要寫在 Repository 或 Controller 裡。
-  - **呼叫端標準流程**：Repository 查出 Entity → 呼叫 Entity 方法改變狀態
-    → Repository 存回去。**不要**在 Repository 開
+  - 呼叫端標準流程：Repository 查出 Entity → 呼叫 Entity 方法改變狀態
+    → Repository 存回去。不要在 Repository 開
     `Toggle{XX}(Guid {entity}Id)` 這種直接用 id 操作、把邏輯藏在
     Repository 裡的方法。
 
@@ -516,7 +596,8 @@ public IActionResult Toggle(Guid todoId)
 **說明**
 
 `{Entity}Id` 一看就知道屬於哪個 Entity；GUIDv7 可在用戶端產生、天生依建立
-時間排序，比 `int` 流水號更適合當索引鍵、也更安全。時間戳記統一由
+時間排序，比 `int` 流水號更適合當索引鍵、也更安全；碰撞機率低到可忽略，
+不需要額外的唯一性檢查機制。時間戳記統一由
 Repository 的 `Add`／`Update` 蓋，不用各呼叫端各自處理；UTC 是不受時區
 影響的絕對基準，跨伺服器也一致。避免「貧血模型」（Entity 只有屬性沒有
 行為，邏輯散落在 Service／Controller／Repository 各處，同一規則被實作
