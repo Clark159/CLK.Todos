@@ -26,41 +26,34 @@
 
 **規則**
 
-- `src/`：所有原始碼專案放這裡，`.sln` 跟所有專案同一層，不放 repo
-  根目錄。之後新增測試專案，一律放 `tests/`，跟 `src/` 同一層。
-- 一個 `.sln` 可以包含多個 `{Domain}`（多個 Bounded Context）：`.sln`
-  檔名對應 repo 本身，不綁定任何一個 `{Domain}`。
-- `docs/`：架構規則、設計文件這類跟程式碼相關但不參與建置的文件放這裡；
-  例外是「同時要給 AI 當 Skill 套用」的設計規則本文（例如這份
-  `architecture.md`）——跟對應的 `SKILL.md` 放同一個 Skill 資料夾
-  （`.claude/skills/{skill 名稱}/`），單一檔案同時是規則本文＋Skill 的
-  參考資料，不在 `docs/`／`.claude/skills/` 兩邊各存一份，避免修規則要
-  兩邊同步、久了內容兜不起來。
+- `src/`：所有原始碼專案放這裡。
+- `docs/`：架構規則、設計文件這類跟程式碼相關但不參與建置的文件放這裡。
+- `tests/`：測試專案放這裡，跟 `src/` 同一層。
 - `README.md`：專案說明，放 repo 根目錄。
+- `LICENSE`：授權條款，放 repo 根目錄。
 - `.gitignore`：Git 版本控制排除清單，放 repo 根目錄。
 - repo 根目錄只留上述這類跟建置無關的東西，不放任何 `.sln`／專案檔案。
 
 **範例**
 
-- repo 根目錄配置（本專案：CLK.Todos，目前只有 `Todo` 一個 `{Domain}`）
+- repo 根目錄配置
 
 ```
-CLK.Todos/                   repo 根目錄
-├── README.md
-├── .gitignore
+CLK.Todos/        
+├── src/
 ├── docs/
-│   └── next-session-prompt.md
-├── .claude/
-│   └── skills/
-│       └── mdp-dotnet-architecture/
-│           ├── SKILL.md      AI 執行版（工作流程／檢查清單）
-│           └── architecture.md  規則本文（人類／AI 共用，這份文件）
-└── src/
-    ├── CLK.Todos.sln
-    ├── CLK.Todos/
-    ├── CLK.Todos.Accesses/
-    └── CLK.Todos.WebApp/
+├── tests/
+├── README.md
+├── LICENSE
+└── .gitignore
 ```
+
+**說明**
+
+`src/`／`docs/`／`tests/` 各自獨立成一條規則，資料夾用途一看就懂，
+不用進到裡面才知道能放什麼；跟建置無關的東西（`README.md`、`LICENSE`、
+`.gitignore`）限定只能放 repo 根目錄，讓根目錄保持乾淨，任何 `.sln`／
+專案檔案都應該在 `src/` 裡，不會有人在根目錄亂放東西找不到對應規則。
 
 ## 02. Architecture 設計規範
 
@@ -80,8 +73,9 @@ CLK.Todos/                   repo 根目錄
   Host 層相依 Domain 層＋Access 層。
 - 同一個 `{Domain}` 可以同時有多個 Host 層專案（例如網站＋批次匯入用的
   Console 工具），都依賴同一個 `{Domain}.Accesses`／`{Domain}`。
-- 一個 `.sln` 可以同時有多組 `{Domain}`／`{Domain}.Accesses`／Host 層
-  專案，各組 `{Domain}` 之間彼此獨立、不共用 Repository 介面或 Context。
+- `.sln` 檔名對應 repo，跟所有專案同一層，不放 repo 根目錄。
+- `.sln` 可以包含多組 `{Domain}`／`{Domain}.Accesses`／Host 層專案；各組 `{Domain}` 之間彼此獨立、不共用 Repository 介面或
+  Context。
 
 **範例**
 
