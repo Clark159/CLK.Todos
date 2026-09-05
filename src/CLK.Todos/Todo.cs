@@ -5,7 +5,7 @@ namespace CLK.Todos
     public class Todo
     {
         // Properties
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
         [Required(ErrorMessage = "請輸入待辦事項標題")]
         [StringLength(100, ErrorMessage = "標題長度不可超過 100 字")]

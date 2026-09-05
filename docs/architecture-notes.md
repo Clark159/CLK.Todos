@@ -262,8 +262,11 @@ namespace CLK.Todos
   一眼就能看出這裡總共驗證了幾件事、各自驗證什麼。
 - **布林條件不要用 `!` 取反**，改用 `== false` / `== true` 明確寫出來
   （這其實是全專案通則，不只合約檢查適用，見第 14 節）。
-- 像 `if (條件) return ...;` 這種單一陳述式的 guard clause，**可以省略
-  大括號、寫成一行**，不用展開成四行的 `if { }` 區塊。
+- 像 `if (條件) return ...;` 這種單一陳述式的 guard clause，**一律省略
+  大括號、寫成一行**，不要展開成四行的 `if { }` 區塊——**這條不只限於
+  `// Contracts` 底下的參數檢查，方法本體任何地方「不合法／找不到就
+  提前 return」的單一陳述式判斷都比照辦理**（例如 `// Search` 步驟裡
+  查無資料就回傳的判斷）。
 
 `// Contracts` 的格式：**標籤緊接著第一個檢查、不空行**（跟第 16 節的
 標籤規則一致）；如果檢查內容不只一行，**內容彼此之間也不空行**（緊貼在
@@ -426,15 +429,12 @@ public class Todo
 public IActionResult Toggle(int id)
 {
     var todo = _todoContext.TodoRepository.FindById(id);
-    if (todo is null)
-    {
-        return NotFound();
-    }
+    if (todo is null) return NotFound();
 
     todo.ToggleDone();
     _todoContext.TodoRepository.Update(todo);
 
-    // Return
+    // Result
     return RedirectToAction(nameof(Index));
 }
 ```
@@ -445,7 +445,7 @@ public IActionResult Toggle(int id)
 Console 工具、還是測試呼叫 `Todo.ToggleDone()`，規則都保證一致，
 Repository 也能維持單純的存取角色，不會越長越肥。
 
-## 13. `// Default` 與 `// Return` 註解慣例
+## 13. `// Default` 與 `// Result` 註解慣例
 
 ### 建構子：`// Default`
 
@@ -464,14 +464,14 @@ public TodoContext(ITodoRepository todoRepository)
 }
 ```
 
-### 方法：`// Return`
+### 方法：`// Result`
 
-方法裡代表「正常結果」的最後一個 `return`，前面加上 `// Return` 註解；
-如果前面有其他邏輯，空一行再接 `// Return`，沒有的話（`// Return` 是
+方法裡代表「正常結果」的最後一個 `return`，前面加上 `// Result` 註解；
+如果前面有其他邏輯，空一行再接 `// Result`，沒有的話（`// Result` 是
 方法本體第一行）就不用空行。
 
 **例外：屬性的 `get` 如果整個只有一行（就只有那個 `return`），不加
-`// Return`，而且整個 `get` 縮成一行寫**，比展開成三行好讀：
+`// Result`，而且整個 `get` 縮成一行寫**，比展開成三行好讀：
 
 ```csharp
 public ITodoRepository TodoRepository
@@ -481,7 +481,7 @@ public ITodoRepository TodoRepository
 ```
 
 **提前結束的 guard clause 式 `return`（例如 `if (todo is null) return NotFound();`
-這種）不用加 `// Return`**——不管它是不是在 `// Contracts` 標籤底下，
+這種）不用加 `// Result`**——不管它是不是在 `// Contracts` 標籤底下，
 這種 return 已經由前面的 `if` 條件自我解釋，只有「這個方法真正要交付的
 結果」才需要標註：
 
@@ -489,12 +489,9 @@ public ITodoRepository TodoRepository
 public IActionResult Edit(int id)
 {
     var todo = _todoContext.TodoRepository.FindById(id);
-    if (todo is null)
-    {
-        return NotFound();
-    }
+    if (todo is null) return NotFound();
 
-    // Return
+    // Result
     return View(todo);
 }
 ```
@@ -512,22 +509,19 @@ public bool Update(Todo todo)
     lock (_lock)
     {
         var existing = _todos.FirstOrDefault(t => t.Id == todo.Id);
-        if (existing is null)
-        {
-            return false;
-        }
+        if (existing is null) return false;
 
         existing.Title = todo.Title;
         existing.IsDone = todo.IsDone;
 
-        // Return
+        // Result
         return true;
     }
 }
 ```
 
 **為什麼這樣做：** `// Default` 讓建構子一眼就能分出「合約檢查」跟
-「真正做的事（存欄位）」兩個階段；`// Return` 讓方法裡「這是提前擋掉的
+「真正做的事（存欄位）」兩個階段；`// Result` 讓方法裡「這是提前擋掉的
 特殊情況」跟「這是正常要交付的結果」清楚分開，不用逐行讀邏輯才能找到
 真正的輸出在哪裡。
 
@@ -588,7 +582,7 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 
     _todoContext.TodoRepository.Add(todo);
 
-    // Return
+    // Result
     return RedirectToAction(nameof(Index));
 }
 ```
@@ -604,12 +598,35 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 
 ## 16. 方法內部的小區塊標籤
 
-**方法本體如果可以拆成好幾個邏輯步驟，每個步驟前面加一個單字的小註解**，
-講清楚這個步驟在做什麼（通常跟一個動詞或操作名稱對應，例如
-`FindById`、`Add`、`Update`、`Remove`）。跟 `// Contracts`、`// Default`、
-`// Return` 同一套排版：第一個標籤前面不空行，後面每個標籤前面空一行。
+**方法本體避免寫太深的巢狀，盡量拆成一個個平鋪的區塊**，每個區塊前面
+加一個單字的小註解講清楚這個區塊在做什麼——**註解只是提示這個區塊的
+角色，不要把整段邏輯寫進註解裡**。跟 `// Contracts`、`// Default` 同一套
+排版：第一個標籤前面不空行，後面每個標籤前面空一行。
 
-範例（`MockTodoRepository.Update`）：
+### 標籤詞彙表
+
+小標籤**優先從下面這份清單挑字**，不夠用才自己另外想詞：
+
+| 標籤 | 用途 | 目前是否已有實例 |
+|---|---|---|
+| `// Contracts` | 方法／建構子最前面的參數合約檢查（見第 9 節） | 有 |
+| `// Variables` | 宣告本地變數（還沒賦值、純宣告用途的區塊） | 尚無，先保留 |
+| `// Initialize` | 初始化一個物件或集合的起始狀態 | 尚無，先保留 |
+| `// Default` | 建構子裡「把參數存進欄位」的預設賦值（見第 13 節） | 有 |
+| `// Define` | 定義／組出一個新的物件或值 | 尚無，先保留 |
+| `// Result` | 方法裡代表「正常結果」的最後一個 `return`（見第 13 節） | 有 |
+| `// Require` | 方法本體中途（不是開頭參數）冒出的額外前置要求 | 尚無，先保留 |
+| `// Arguments` | 呼叫下一個方法前，組裝要傳入的引數 | 尚無，先保留 |
+| `// Notify` | 發出通知（例如記錄 log、觸發事件通知） | 尚無，先保留 |
+| `// Search` | 查詢資料（例如呼叫 Repository 的 `FindById`／`FindAll`） | 有 |
+| `// Raise` | 拋出例外，或引發（raise）一個事件 | 尚無，先保留 |
+| `// Execute` | 執行核心動作（例如呼叫 Repository 的 `Add`／`Update`／`Remove`，或呼叫 Entity 的狀態轉換方法） | 有 |
+| `// Lock` | 進入 `lock` 區塊做執行緒同步 | 有 |
+
+「尚無，先保留」的標籤先在這裡記下定義，之後程式碼裡出現對應場景再套用，
+不用現在硬找地方套。
+
+範例（`MockTodoRepository.Update`，查詢用 `// Search`、寫入用 `// Execute`）：
 
 ```csharp
 public bool Update(Todo todo)
@@ -617,49 +634,83 @@ public bool Update(Todo todo)
     // Contracts
     ArgumentNullException.ThrowIfNull(todo);
 
+    // Lock
     lock (_lock)
     {
-        // FindById
+        // Search
         var existing = _todos.FirstOrDefault(t => t.Id == todo.Id);
-        if (existing is null)
-        {
-            return false;
-        }
+        if (existing is null) return false;
 
-        // Update
+        // Execute
         existing.Title = todo.Title;
         existing.IsDone = todo.IsDone;
 
-        // Return
+        // Result
         return true;
     }
 }
 ```
 
-範例（`TodosController.Toggle`，步驟橫跨查詢、切換、儲存三個階段）：
+範例（`TodosController.Toggle`，步驟橫跨查詢、切換、儲存三個階段，
+切換狀態＋存回去算同一個「執行」區塊）：
 
 ```csharp
 public IActionResult Toggle(int id)
 {
-    // FindById
+    // Search
     var todo = _todoContext.TodoRepository.FindById(id);
-    if (todo is null)
-    {
-        return NotFound();
-    }
+    if (todo is null) return NotFound();
 
-    // ToggleDone
+    // Execute
     todo.ToggleDone();
     _todoContext.TodoRepository.Update(todo);
 
-    // Return
+    // Result
     return RedirectToAction(nameof(Index));
 }
 ```
 
 只有一個步驟的方法（例如 `FindById`、`FindAll` 這種本體就是單一個 `return`）
-不需要額外標籤，`// Return` 本身就足夠說明。
+不需要額外標籤，`// Result` 本身就足夠說明。
 
 **為什麼這樣做：** 方法一長，光看程式碼要花時間才能分辨「這幾行在做
 同一件事、還是已經換到下一步了」；一個單字標籤讓步驟邊界一眼可辨，
-掃過標籤就能知道整個方法的流程，不用逐行讀。
+掃過標籤就能知道整個方法的流程，不用逐行讀。統一從固定詞彙表挑字，
+也讓不同方法、不同專案的標籤用語一致，不會同一種操作在這裡叫
+`FindById`、在那裡叫 `Query`、`Lookup` 各自表述。巢狀太深的方法（多層
+`if`／`else`／迴圈疊在一起）光看縮排就很難分辨區塊邊界，盡量用提前
+`return`（見第 9 節）把邏輯攤平成一層層平鋪的區塊，標籤才有意義。
+
+## 17. Entity 主鍵：優先使用 GUIDv7
+
+**Entity 的 `Id` 屬性優先用 `Guid`，並且用 `Guid.CreateVersion7()` 產生
+（不是 `Guid.NewGuid()` 這種隨機、無序的 v4）**，不要用 `int` 加流水號
+計數器：
+
+```csharp
+public class Todo
+{
+    // Properties
+    public Guid Id { get; set; }
+}
+```
+
+- **Repository 介面／實作**：所有以 `id` 查找／操作單筆資料的方法參數
+  型別一律跟著改成 `Guid`（例如 `FindById(Guid id)`、`Remove(Guid id)`）。
+- **產生時機**：由 Repository 的 `Add` 方法在寫入當下呼叫
+  `Guid.CreateVersion7()` 賦值給 `todo.Id`（見第 16 節 `MockTodoRepository.Add`
+  的 `// Execute` 區塊），呼叫端不用自己組 id。
+- **不需要**額外的流水號欄位（例如 `_nextId`）——GUIDv7 本身已經具備
+  時間排序性，拿掉計數器後 Repository 也少一個要處理併發遞增的欄位。
+- MVC Controller、View 不用額外處理：ASP.NET Core 的路由與表單繫結
+  原生支援 `Guid`，`asp-route-id`、`asp-for="Id"` 這類 Tag Helper 不用改寫法。
+
+目前套用的地方：`Todo.Id`、`ITodoRepository.FindById`／`Remove`、
+`MockTodoRepository` 全部方法、`TodosController` 的 `Edit`／`Delete`／
+`DeleteConfirmed`／`Toggle`（route 參數 `id`）。
+
+**為什麼這樣做：** `int` 流水號需要一個共用計數器才能保證不重複，
+多執行個體（例如之後真的接資料庫、或多台伺服器）很容易衝突；GUIDv7
+在用戶端就能產生全域唯一值，不用問資料庫要下一個號碼是多少，同時
+前 48 bit 是時間戳，天生照建立時間排序，比純隨機的 v4 更適合當
+資料庫索引鍵、也比 `int` 更難被外部猜測、列舉。

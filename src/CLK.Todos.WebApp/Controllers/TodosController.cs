@@ -24,17 +24,17 @@ namespace CLK.Todos.WebApp
         // GET: /Todos
         public IActionResult Index()
         {
-            // FindAll
+            // Search
             var todos = _todoContext.TodoRepository.FindAll();
 
-            // Return
+            // Result
             return View(todos);
         }
 
         // GET: /Todos/Create
         public IActionResult Create()
         {
-            // Return
+            // Result
             return View();
         }
 
@@ -47,87 +47,78 @@ namespace CLK.Todos.WebApp
             ArgumentNullException.ThrowIfNull(todo);
             if (this.ModelState.IsValid == false) return View(todo);
 
-            // Add
+            // Execute
             _todoContext.TodoRepository.Add(todo);
 
-            // Return
+            // Result
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: /Todos/Edit/5
-        public IActionResult Edit(int id)
+        // GET: /Todos/Edit/{id}
+        public IActionResult Edit(Guid id)
         {
-            // FindById
+            // Search
             var todo = _todoContext.TodoRepository.FindById(id);
-            if (todo is null)
-            {
-                return NotFound();
-            }
+            if (todo is null) return NotFound();
 
-            // Return
+            // Result
             return View(todo);
         }
 
-        // POST: /Todos/Edit/5
+        // POST: /Todos/Edit/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, [Bind("Id,Title,IsDone")] Todo todo = null)
+        public IActionResult Edit(Guid id, [Bind("Id,Title,IsDone")] Todo todo = null)
         {
             // Contracts
             ArgumentNullException.ThrowIfNull(todo);
             if (id != todo.Id) return View(todo);
             if (this.ModelState.IsValid == false) return View(todo);
 
-            // Update
+            // Execute
             _todoContext.TodoRepository.Update(todo);
 
-            // Return
+            // Result
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: /Todos/Delete/5
-        public IActionResult Delete(int id)
+        // GET: /Todos/Delete/{id}
+        public IActionResult Delete(Guid id)
         {
-            // FindById
+            // Search
             var todo = _todoContext.TodoRepository.FindById(id);
-            if (todo is null)
-            {
-                return NotFound();
-            }
+            if (todo is null) return NotFound();
 
-            // Return
+            // Result
             return View(todo);
         }
 
-        // POST: /Todos/Delete/5
+        // POST: /Todos/Delete/{id}
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public IActionResult DeleteConfirmed(int id)
+        public IActionResult DeleteConfirmed(Guid id)
         {
-            // Remove
+            // Execute
             _todoContext.TodoRepository.Remove(id);
 
-            // Return
+            // Result
             return RedirectToAction(nameof(Index));
         }
 
-        // POST: /Todos/Toggle/5
+        // POST: /Todos/Toggle/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Toggle(int id)
+        public IActionResult Toggle(Guid id)
         {
-            // FindById
+            // Search
             var todo = _todoContext.TodoRepository.FindById(id);
-            if (todo is null)
-            {
-                return NotFound();
-            }
+            if (todo is null) return NotFound();
 
-            // ToggleDone
+            // Execute
             todo.ToggleDone();
             _todoContext.TodoRepository.Update(todo);
 
-            // Return
+            // Result
             return RedirectToAction(nameof(Index));
         }
     }

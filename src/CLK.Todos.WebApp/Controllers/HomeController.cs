@@ -23,20 +23,20 @@ namespace CLK.Todos.WebApp
         // Methods
         public IActionResult Index()
         {
-            // Return
+            // Result
             return View();
         }
 
         public IActionResult Privacy()
         {
-            // Return
+            // Result
             return View();
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            // Return
+            // Result
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? this.HttpContext.TraceIdentifier });
         }
     }

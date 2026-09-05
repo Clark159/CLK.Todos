@@ -9,8 +9,6 @@ namespace CLK.Todos.Accesses
 
         private readonly object _lock = new();
 
-        private int _nextId = 1;
-
 
         // Methods
         public Todo Add(Todo todo)
@@ -18,13 +16,14 @@ namespace CLK.Todos.Accesses
             // Contracts
             ArgumentNullException.ThrowIfNull(todo);
 
+            // Lock
             lock (_lock)
             {
-                // Add
-                todo.Id = _nextId++;
+                // Execute
+                todo.Id = Guid.CreateVersion7();
                 _todos.Add(todo);
 
-                // Return
+                // Result
                 return todo;
             }
         }
@@ -34,57 +33,55 @@ namespace CLK.Todos.Accesses
             // Contracts
             ArgumentNullException.ThrowIfNull(todo);
 
+            // Lock
             lock (_lock)
             {
-                // FindById
+                // Search
                 var existing = _todos.FirstOrDefault(t => t.Id == todo.Id);
-                if (existing is null)
-                {
-                    return false;
-                }
+                if (existing is null) return false;
 
-                // Update
+                // Execute
                 existing.Title = todo.Title;
                 existing.IsDone = todo.IsDone;
 
-                // Return
+                // Result
                 return true;
             }
         }
 
-        public bool Remove(int id)
+        public bool Remove(Guid id)
         {
+            // Lock
             lock (_lock)
             {
-                // FindById
+                // Search
                 var existing = _todos.FirstOrDefault(t => t.Id == id);
-                if (existing is null)
-                {
-                    return false;
-                }
+                if (existing is null) return false;
 
-                // Remove
+                // Execute
                 _todos.Remove(existing);
 
-                // Return
+                // Result
                 return true;
             }
         }
 
-        public Todo FindById(int id)
+        public Todo FindById(Guid id)
         {
+            // Lock
             lock (_lock)
             {
-                // Return
+                // Result
                 return _todos.FirstOrDefault(t => t.Id == id);
             }
         }
 
         public IReadOnlyList<Todo> FindAll()
         {
+            // Lock
             lock (_lock)
             {
-                // Return
+                // Result
                 return _todos
                     .OrderBy(t => t.IsDone)
                     .ThenByDescending(t => t.CreatedAt)
