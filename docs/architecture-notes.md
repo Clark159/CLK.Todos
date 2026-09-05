@@ -209,6 +209,11 @@ public class TodoContext
 - **屬性一律用完整的 `get` / `return` 寫法，不要用 `=>` expression-bodied
   寫法**（自動屬性 `{ get; set; }` 不受影響，這條只針對有邏輯、需要寫
   `return` 的計算屬性）。
+- **`// Fields` 分類內部，同步用的 lock 物件（例如 `private readonly
+  object _lock = new();`）排最前面**，其餘欄位接在後面（例如
+  `MockTodoRepository` 的 `_lock` 排在 `_todos` 前面）——`_lock` 是用來
+  保護後面欄位的存取，排最前面代表「這個類別底下的欄位需要同步保護」，
+  一眼就能看出這個類別有執行緒安全的考量。
 
 範例（`TodoContext`）：
 
@@ -323,11 +328,11 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 `Edit`（POST）多一個「路由 id 跟表單 id 是否一致」的檢查，一樣獨立一行：
 
 ```csharp
-public IActionResult Edit(Guid id, [Bind("Id,Title,IsDone")] Todo todo = null)
+public IActionResult Edit(Guid todoId, [Bind("TodoId,Title,IsDone")] Todo todo = null)
 {
     // Contracts
     ArgumentNullException.ThrowIfNull(todo);
-    if (id != todo.Id) return View(todo);
+    if (todoId != todo.TodoId) return View(todo);
     if (ModelState.IsValid == false) return View(todo);
 
     // Execute
@@ -357,7 +362,7 @@ public IActionResult Edit(Guid id, [Bind("Id,Title,IsDone")] Todo todo = null)
 ```
 
 - 參照型別（`string`、`Todo` 這類 class）**不要加 `?`**（例如寫
-  `Todo FindById(Guid id)`、`Todo todo = null`，不要寫 `Todo? FindById(...)`）。
+  `Todo FindById(Guid todoId)`、`Todo todo = null`，不要寫 `Todo? FindById(...)`）。
   Nullable 功能關掉之後，這種標註不會被編譯器檢查，加了反而會產生
   `CS8632` 警告（「可為 Null 的參考型別註釋應只用於 nullable 註釋內容中」）。
 - 值型別要表示「可能沒有值」，還是可以用 `?`（例如 `int?`），這是 C# 原生的
@@ -379,9 +384,9 @@ Todo Add(Todo todo);
 
 bool Update(Todo todo);
 
-bool Remove(Guid id);
+bool Remove(Guid todoId);
 
-Todo FindByXX(Guid id);
+Todo FindByXX(Guid todoId);
 
 IReadOnlyList<Todo> FindAll();
 
@@ -432,12 +437,12 @@ public class Todo
 
 **呼叫端的標準流程**：先用 Repository 查出 Entity，呼叫 Entity 上的方法
 改變狀態，再用 Repository 存回去——**不要**在 Repository 上開一個
-`ToggleDone(Guid id)` 這種直接用 id 操作、把邏輯藏在 Repository 裡的方法：
+`ToggleDone(Guid todoId)` 這種直接用 id 操作、把邏輯藏在 Repository 裡的方法：
 
 ```csharp
-public IActionResult Toggle(Guid id)
+public IActionResult Toggle(Guid todoId)
 {
-    var todo = _todoContext.TodoRepository.FindById(id);
+    var todo = _todoContext.TodoRepository.FindById(todoId);
     if (todo is null) return NotFound();
 
     todo.ToggleDone();
@@ -495,9 +500,9 @@ public ITodoRepository TodoRepository
 結果」才需要標註：
 
 ```csharp
-public IActionResult Edit(Guid id)
+public IActionResult Edit(Guid todoId)
 {
-    var todo = _todoContext.TodoRepository.FindById(id);
+    var todo = _todoContext.TodoRepository.FindById(todoId);
     if (todo is null) return NotFound();
 
     // Result
@@ -517,7 +522,7 @@ public bool Update(Todo todo)
 
     lock (_lock)
     {
-        var existing = _todos.FirstOrDefault(t => t.Id == todo.Id);
+        var existing = _todos.FirstOrDefault(t => t.TodoId == todo.TodoId);
         if (existing is null) return false;
 
         existing.Title = todo.Title;
@@ -647,7 +652,7 @@ public bool Update(Todo todo)
     lock (_lock)
     {
         // Search
-        var existing = _todos.FirstOrDefault(t => t.Id == todo.Id);
+        var existing = _todos.FirstOrDefault(t => t.TodoId == todo.TodoId);
         if (existing is null) return false;
 
         // Execute
@@ -664,10 +669,10 @@ public bool Update(Todo todo)
 切換狀態＋存回去算同一個「執行」區塊）：
 
 ```csharp
-public IActionResult Toggle(Guid id)
+public IActionResult Toggle(Guid todoId)
 {
     // Search
-    var todo = _todoContext.TodoRepository.FindById(id);
+    var todo = _todoContext.TodoRepository.FindById(todoId);
     if (todo is null) return NotFound();
 
     // Execute
@@ -690,36 +695,88 @@ public IActionResult Toggle(Guid id)
 `if`／`else`／迴圈疊在一起）光看縮排就很難分辨區塊邊界，盡量用提前
 `return`（見第 9 節）把邏輯攤平成一層層平鋪的區塊，標籤才有意義。
 
-## 17. Entity 主鍵：優先使用 GUIDv7
+## 17. Entity 主鍵：命名 `{Entity}Id`、優先使用 GUIDv7
 
-**Entity 的 `Id` 屬性優先用 `Guid`，並且用 `Guid.CreateVersion7()` 產生
-（不是 `Guid.NewGuid()` 這種隨機、無序的 v4）**，不要用 `int` 加流水號
-計數器：
+**Entity 的主鍵屬性一律命名 `{Entity}Id`，不要用單純的 `Id`**（例如
+`Todo` 的主鍵是 `TodoId`，不是 `Id`）；型別優先用 `Guid`，並且用
+`Guid.CreateVersion7()` 產生（不是 `Guid.NewGuid()` 這種隨機、無序的
+v4），不要用 `int` 加流水號計數器：
 
 ```csharp
 public class Todo
 {
     // Properties
-    public Guid Id { get; set; }
+    public Guid TodoId { get; set; }
 }
 ```
 
-- **Repository 介面／實作**：所有以 `id` 查找／操作單筆資料的方法參數
-  型別一律跟著改成 `Guid`（例如 `FindById(Guid id)`、`Remove(Guid id)`）。
+- **所有代表這個 Entity 主鍵的 `id` 變數／參數，一律照同一套規則命名
+  成 `{entity}Id`**（例如 `todoId`），不管出現在 Repository 介面／實作、
+  Controller action 參數、MVC 路由樣板、View 的 `asp-route-*`，全部
+  一致，不留通用的 `id` 這個名字：
+  - Repository：`FindById(Guid todoId)`、`Remove(Guid todoId)`。
+  - Controller action 參數：`Edit(Guid todoId)`、`Delete(Guid todoId)`、
+    `DeleteConfirmed(Guid todoId)`、`Toggle(Guid todoId)`。
+  - MVC 路由樣板：`Program.cs` 的預設路由 pattern 用
+    `{controller=Todos}/{action=Index}/{todoId?}`，不是泛用的 `{id?}`。
+  - View：`asp-route-todoId="@todo.TodoId"`（不是 `asp-route-id`）。
 - **產生時機**：由 Repository 的 `Add` 方法在寫入當下呼叫
-  `Guid.CreateVersion7()` 賦值給 `todo.Id`（見第 16 節 `MockTodoRepository.Add`
-  的 `// Execute` 區塊），呼叫端不用自己組 id。
+  `Guid.CreateVersion7()` 賦值給 `todo.TodoId`（見第 16 節
+  `MockTodoRepository.Add` 的 `// Execute` 區塊），呼叫端不用自己組 id。
 - **不需要**額外的流水號欄位（例如 `_nextId`）——GUIDv7 本身已經具備
   時間排序性，拿掉計數器後 Repository 也少一個要處理併發遞增的欄位。
-- MVC Controller、View 不用額外處理：ASP.NET Core 的路由與表單繫結
-  原生支援 `Guid`，`asp-route-id`、`asp-for="Id"` 這類 Tag Helper 不用改寫法。
+- MVC Controller、View 不用額外處理型別轉換：ASP.NET Core 的路由與
+  表單繫結原生支援 `Guid`；`[Bind(...)]` 清單裡的欄位名記得跟著改成
+  `TodoId`。
 
-目前套用的地方：`Todo.Id`、`ITodoRepository.FindById`／`Remove`、
-`MockTodoRepository` 全部方法、`TodosController` 的 `Edit`／`Delete`／
-`DeleteConfirmed`／`Toggle`（route 參數 `id`）。
+目前套用的地方：`Todo.TodoId`、`ITodoRepository.FindById`／`Remove`
+（參數 `todoId`）、`MockTodoRepository` 全部方法、`TodosController` 的
+`Edit`／`Delete`／`DeleteConfirmed`／`Toggle`（action 參數 `todoId`）、
+`Program.cs` 預設路由的 `{todoId?}`、Views 裡的
+`asp-route-todoId="@todo.TodoId"`／`asp-for="TodoId"`。
 
-**為什麼這樣做：** `int` 流水號需要一個共用計數器才能保證不重複，
-多執行個體（例如之後真的接資料庫、或多台伺服器）很容易衝突；GUIDv7
-在用戶端就能產生全域唯一值，不用問資料庫要下一個號碼是多少，同時
-前 48 bit 是時間戳，天生照建立時間排序，比純隨機的 v4 更適合當
-資料庫索引鍵、也比 `int` 更難被外部猜測、列舉。
+**為什麼這樣做：** `{Entity}Id` 比單純的 `Id` 更明確——在只看得到欄位
+名稱的地方（例如 SQL 查詢結果、log、跨 Entity 的 join）能立刻知道這個
+id 屬於哪個 Entity，不用回頭看是哪張表／哪個型別；`int` 流水號需要一個
+共用計數器才能保證不重複，多執行個體（例如之後真的接資料庫、或多台
+伺服器）很容易衝突；GUIDv7 在用戶端就能產生全域唯一值，不用問資料庫要
+下一個號碼是多少，同時前 48 bit 是時間戳，天生照建立時間排序，比純隨機
+的 v4 更適合當資料庫索引鍵、也比 `int` 更難被外部猜測、列舉。
+
+## 18. Entity 稽核時間戳記：`CreateTime` 與 `UpdateTime`
+
+**Entity 記錄建立時間的屬性一律叫 `CreateTime`（不是 `CreatedAt`），
+更新時間叫 `UpdateTime`**，兩者都是 `DateTime`，預設值都給
+`DateTime.Now`：
+
+```csharp
+public class Todo
+{
+    // Properties
+    public DateTime CreateTime { get; set; } = DateTime.Now;
+
+    public DateTime UpdateTime { get; set; } = DateTime.Now;
+}
+```
+
+- **`CreateTime`**：物件建立當下的預設值就是最終值，之後不會再變動，
+  不需要 Repository 額外賦值。
+- **`UpdateTime`**：預設值跟 `CreateTime` 一樣（代表「還沒被更新過，
+  最後異動時間就是建立時間」），**由 Repository 的 `Update` 方法在
+  寫入當下重新蓋上 `DateTime.Now`**（見 `MockTodoRepository.Update` 的
+  `// Execute` 區塊，跟 `Title`／`IsDone` 這些欄位一起複製，只是這欄
+  不信任呼叫端傳進來的值，一律用當下時間覆蓋）。
+- Entity 上的狀態轉換方法（例如 `Todo.ToggleDone()`）**不用自己碰
+  `UpdateTime`**——只要有經過 Repository 的 `Update` 就一定會蓋到最新
+  時間，不用每個會改變狀態的方法各自處理一次。
+
+目前套用的地方：`Todo.CreateTime`／`UpdateTime`、
+`MockTodoRepository.Add`（`CreateTime` 用屬性預設值，不用額外賦值）／
+`Update`（蓋 `UpdateTime`）／`FindAll`（排序用 `CreateTime`）。
+
+**為什麼這樣做：** `CreateTime`／`UpdateTime` 一組對稱命名，比
+`CreatedAt` 這種只顧建立、沒有對應更新時間的命名更完整；蓋
+`UpdateTime` 的責任統一放在 Repository 的 `Update` 方法（跟第 11 節
+「Repository 只放存取資料的方法」一致——這是持久化當下的稽核動作，
+不是 Entity 自身的業務邏輯），不用每個會呼叫 `Update` 的地方（Controller、
+Entity 方法）各自記得要蓋時間戳記，只要走過 `Update` 就保證正確。

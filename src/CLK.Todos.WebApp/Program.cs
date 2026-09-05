@@ -27,7 +27,7 @@ app.MapStaticAssets();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Todos}/{action=Index}/{id?}")
+    pattern: "{controller=Todos}/{action=Index}/{todoId?}")
     .WithStaticAssets();
 
 

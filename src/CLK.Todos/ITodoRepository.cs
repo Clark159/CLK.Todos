@@ -7,9 +7,9 @@ namespace CLK.Todos
 
         bool Update(Todo todo);
 
-        bool Remove(Guid id);
+        bool Remove(Guid todoId);
 
-        Todo FindById(Guid id);
+        Todo FindById(Guid todoId);
 
         IReadOnlyList<Todo> FindAll();
     }

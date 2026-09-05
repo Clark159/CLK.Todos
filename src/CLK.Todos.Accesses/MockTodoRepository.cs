@@ -5,9 +5,9 @@ namespace CLK.Todos.Accesses
     public class MockTodoRepository : ITodoRepository
     {
         // Fields
-        private readonly List<Todo> _todos = new();
-
         private readonly object _lock = new();
+
+        private readonly List<Todo> _todos = new();
 
 
         // Methods
@@ -20,7 +20,7 @@ namespace CLK.Todos.Accesses
             lock (_lock)
             {
                 // Execute
-                todo.Id = Guid.CreateVersion7();
+                todo.TodoId = Guid.CreateVersion7();
                 _todos.Add(todo);
 
                 // Result
@@ -37,25 +37,26 @@ namespace CLK.Todos.Accesses
             lock (_lock)
             {
                 // Search
-                var existing = _todos.FirstOrDefault(t => t.Id == todo.Id);
+                var existing = _todos.FirstOrDefault(t => t.TodoId == todo.TodoId);
                 if (existing is null) return false;
 
                 // Execute
                 existing.Title = todo.Title;
                 existing.IsDone = todo.IsDone;
+                existing.UpdateTime = DateTime.Now;
 
                 // Result
                 return true;
             }
         }
 
-        public bool Remove(Guid id)
+        public bool Remove(Guid todoId)
         {
             // Lock
             lock (_lock)
             {
                 // Search
-                var existing = _todos.FirstOrDefault(t => t.Id == id);
+                var existing = _todos.FirstOrDefault(t => t.TodoId == todoId);
                 if (existing is null) return false;
 
                 // Execute
@@ -66,13 +67,13 @@ namespace CLK.Todos.Accesses
             }
         }
 
-        public Todo FindById(Guid id)
+        public Todo FindById(Guid todoId)
         {
             // Lock
             lock (_lock)
             {
                 // Result
-                return _todos.FirstOrDefault(t => t.Id == id);
+                return _todos.FirstOrDefault(t => t.TodoId == todoId);
             }
         }
 
@@ -84,7 +85,7 @@ namespace CLK.Todos.Accesses
                 // Result
                 return _todos
                     .OrderBy(t => t.IsDone)
-                    .ThenByDescending(t => t.CreatedAt)
+                    .ThenByDescending(t => t.CreateTime)
                     .ToList();
             }
         }
