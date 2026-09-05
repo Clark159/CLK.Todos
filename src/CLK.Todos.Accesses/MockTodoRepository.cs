@@ -15,11 +15,8 @@ namespace CLK.Todos.Accesses
         // Methods
         public Todo Add(Todo todo)
         {
-            #region Contracts
-
+            // Contracts
             ArgumentNullException.ThrowIfNull(todo);
-
-            #endregion
 
             lock (_lock)
             {
@@ -34,11 +31,8 @@ namespace CLK.Todos.Accesses
 
         public bool Update(Todo todo)
         {
-            #region Contracts
-
+            // Contracts
             ArgumentNullException.ThrowIfNull(todo);
-
-            #endregion
 
             lock (_lock)
             {

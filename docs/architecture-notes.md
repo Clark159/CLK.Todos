@@ -247,14 +247,15 @@ namespace CLK.Todos
 ## 9. 合約檢查（Guard Clause）慣例
 
 **建構子或方法的參數，一律在方法本體最前面做基本合約檢查**，並且用
-`#region Contracts` / `#endregion` 包起來，跟後面的邏輯空一行：
+`// Contracts` 標籤（跟第 16 節「方法內部的小區塊標籤」同一套排版），
+跟後面的邏輯空一行：
 
 - **參照型別（物件）參數**：不能為 `null`，用 `ArgumentNullException.ThrowIfNull(參數)`。
 - **字串參數**：不能為 `null` 或空白，用 `ArgumentException.ThrowIfNullOrWhiteSpace(參數)`。
 - **值型別參數**（`int`、`bool`、`DateTime` 這類）：本身不可能是 `null`，
   不需要合約檢查。
 - **MVC Controller 的驗證判斷（例如 `ModelState.IsValid`、路由 id 跟表單 id
-  是否一致）也算合約檢查的一種**，一樣放進 `#region Contracts`，即使它不是
+  是否一致）也算合約檢查的一種**，一樣放進 `// Contracts` 標籤底下，即使它不是
   丟例外、而是提前 `return`。
 - **每一個檢查都獨立成一行、一個判斷式，不要用 `||` / `&&` 把多個檢查
   合併成一個條件**——即使結果都是「不合法就 `return`」，也要拆開寫，
@@ -264,15 +265,13 @@ namespace CLK.Todos
 - 像 `if (條件) return ...;` 這種單一陳述式的 guard clause，**可以省略
   大括號、寫成一行**，不用展開成四行的 `if { }` 區塊。
 
-`#region Contracts` 的格式：**標頭後空一行、`#endregion` 前空一行**；
-但如果檢查內容不只一行，**內容彼此之間不空行**（緊貼在一起）：
+`// Contracts` 的格式：**標籤緊接著第一個檢查、不空行**（跟第 16 節的
+標籤規則一致）；如果檢查內容不只一行，**內容彼此之間也不空行**（緊貼在
+一起）；檢查結束後，跟後面的邏輯空一行：
 
 ```csharp
-#region Contracts
-
+// Contracts
 ArgumentNullException.ThrowIfNull(todoRepository);
-
-#endregion
 ```
 
 範例（`TodoContext` 建構子）：
@@ -280,11 +279,8 @@ ArgumentNullException.ThrowIfNull(todoRepository);
 ```csharp
 public TodoContext(ITodoRepository todoRepository)
 {
-    #region Contracts
-
+    // Contracts
     ArgumentNullException.ThrowIfNull(todoRepository);
-
-    #endregion
 
     _todoRepository = todoRepository;
 }
@@ -296,7 +292,7 @@ public TodoContext(ITodoRepository todoRepository)
 （`ThrowIfNullOrWhiteSpace`）目前程式碼裡還沒有適用的字串參數，先在這裡記下
 規則，之後遇到再套用。
 
-**not-null 檢查 + MVC 驗證判斷放在同一個 `#region Contracts`，但各自獨立
+**not-null 檢查 + MVC 驗證判斷放在同一個 `// Contracts` 標籤底下，但各自獨立
 一行**：`TodosController.Create` / `Edit`（POST）的 `todo` 參數給預設值
 `Todo todo = null`（讓 MVC action 簽章上看得出這個參數可選），但一進方法
 本體還是先用 `ArgumentNullException.ThrowIfNull(todo)` 擋掉 null（正常
@@ -306,12 +302,9 @@ public TodoContext(ITodoRepository todoRepository)
 ```csharp
 public IActionResult Create([Bind("Title")] Todo todo = null)
 {
-    #region Contracts
-
+    // Contracts
     ArgumentNullException.ThrowIfNull(todo);
     if (ModelState.IsValid == false) return View(todo);
-
-    #endregion
 
     _todoContext.TodoRepository.Add(todo);
     return RedirectToAction(nameof(Index));
@@ -323,21 +316,20 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 ```csharp
 public IActionResult Edit(int id, [Bind("Id,Title,IsDone")] Todo todo = null)
 {
-    #region Contracts
-
+    // Contracts
     ArgumentNullException.ThrowIfNull(todo);
     if (id != todo.Id) return View(todo);
     if (ModelState.IsValid == false) return View(todo);
-
-    #endregion
 
     _todoContext.TodoRepository.Update(todo);
     return RedirectToAction(nameof(Index));
 }
 ```
 
-**為什麼這樣做：** `#region Contracts` 讓「這個方法對輸入的基本要求是什麼」
-從外觀就能一眼認出來、甚至可以摺疊起來，不會跟後面真正的商業邏輯混在一起看。
+**為什麼這樣做：** `// Contracts` 標籤讓「這個方法對輸入的基本要求是什麼」
+從外觀就能一眼認出來，不會跟後面真正的商業邏輯混在一起看；跟第 16 節的
+其他步驟標籤是同一套視覺語言，不用另外學一種排版，也不必靠 `#region`
+摺疊/展開才能看清楚檢查內容。
 
 ## 10. 不使用 Nullable 參考型別（Nullable Reference Types）
 
@@ -458,17 +450,14 @@ Repository 也能維持單純的存取角色，不會越長越肥。
 ### 建構子：`// Default`
 
 建構子裡「把參數存進欄位」的賦值陳述式，前面加上 `// Default` 註解
-（跟前面的 `#region Contracts` 之間空一行，`// Default` 本身跟賦值陳述式
+（跟前面的 `// Contracts` 之間空一行，`// Default` 本身跟賦值陳述式
 之間不空行）：
 
 ```csharp
 public TodoContext(ITodoRepository todoRepository)
 {
-    #region Contracts
-
+    // Contracts
     ArgumentNullException.ThrowIfNull(todoRepository);
-
-    #endregion
 
     // Default
     _todoRepository = todoRepository;
@@ -492,7 +481,7 @@ public ITodoRepository TodoRepository
 ```
 
 **提前結束的 guard clause 式 `return`（例如 `if (todo is null) return NotFound();`
-這種）不用加 `// Return`**——不管它是不是在 `#region Contracts` 裡面，
+這種）不用加 `// Return`**——不管它是不是在 `// Contracts` 標籤底下，
 這種 return 已經由前面的 `if` 條件自我解釋，只有「這個方法真正要交付的
 結果」才需要標註：
 
@@ -517,11 +506,8 @@ public IActionResult Edit(int id)
 ```csharp
 public bool Update(Todo todo)
 {
-    #region Contracts
-
+    // Contracts
     ArgumentNullException.ThrowIfNull(todo);
-
-    #endregion
 
     lock (_lock)
     {
@@ -559,7 +545,7 @@ public bool Update(Todo todo)
 
 目前套用的地方：判斷式／布林運算式——`Program.cs` 的
 `app.Environment.IsDevelopment()` 判斷、`ErrorViewModel.ShowRequestId`、
-第 9 節 `#region Contracts` 裡所有布林判斷；翻轉布林值——
+第 9 節 `// Contracts` 標籤底下所有布林判斷；翻轉布林值——
 `Todo.ToggleDone()`。
 
 **為什麼這樣做：** 判斷式的 `!` 容易被忽略，誤讀整段邏輯的方向（尤其
@@ -596,12 +582,9 @@ public void ToggleDone()
 // TodosController
 public IActionResult Create([Bind("Title")] Todo todo = null)
 {
-    #region Contracts
-
+    // Contracts
     ArgumentNullException.ThrowIfNull(todo);
     if (this.ModelState.IsValid == false) return View(todo);
-
-    #endregion
 
     _todoContext.TodoRepository.Add(todo);
 
@@ -631,11 +614,8 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 ```csharp
 public bool Update(Todo todo)
 {
-    #region Contracts
-
+    // Contracts
     ArgumentNullException.ThrowIfNull(todo);
-
-    #endregion
 
     lock (_lock)
     {

@@ -12,11 +12,8 @@ namespace CLK.Todos.WebApp
         // Constructors
         public TodosController(TodoContext todoContext)
         {
-            #region Contracts
-
+            // Contracts
             ArgumentNullException.ThrowIfNull(todoContext);
-
-            #endregion
 
             // Default
             _todoContext = todoContext;
@@ -46,12 +43,9 @@ namespace CLK.Todos.WebApp
         [ValidateAntiForgeryToken]
         public IActionResult Create([Bind("Title")] Todo todo = null)
         {
-            #region Contracts
-
+            // Contracts
             ArgumentNullException.ThrowIfNull(todo);
             if (this.ModelState.IsValid == false) return View(todo);
-
-            #endregion
 
             // Add
             _todoContext.TodoRepository.Add(todo);
@@ -79,13 +73,10 @@ namespace CLK.Todos.WebApp
         [ValidateAntiForgeryToken]
         public IActionResult Edit(int id, [Bind("Id,Title,IsDone")] Todo todo = null)
         {
-            #region Contracts
-
+            // Contracts
             ArgumentNullException.ThrowIfNull(todo);
             if (id != todo.Id) return View(todo);
             if (this.ModelState.IsValid == false) return View(todo);
-
-            #endregion
 
             // Update
             _todoContext.TodoRepository.Update(todo);

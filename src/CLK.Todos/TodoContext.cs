@@ -9,11 +9,8 @@ namespace CLK.Todos
         // Constructors
         public TodoContext(ITodoRepository todoRepository)
         {
-            #region Contracts
-
+            // Contracts
             ArgumentNullException.ThrowIfNull(todoRepository);
-
-            #endregion
 
             // Default
             _todoRepository = todoRepository;

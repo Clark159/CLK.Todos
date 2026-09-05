@@ -12,11 +12,8 @@ namespace CLK.Todos.WebApp
         // Constructors
         public HomeController(ILogger<HomeController> logger)
         {
-            #region Contracts
-
+            // Contracts
             ArgumentNullException.ThrowIfNull(logger);
-
-            #endregion
 
             // Default
             _logger = logger;
