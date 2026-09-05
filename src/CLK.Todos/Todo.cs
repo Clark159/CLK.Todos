@@ -1,5 +1,6 @@
-namespace CLK.Todos;
 using System.ComponentModel.DataAnnotations;
+
+namespace CLK.Todos;
 
 public class Todo
 {

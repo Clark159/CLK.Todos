@@ -1,6 +1,7 @@
-namespace CLK.Todos.WebApp;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+
+namespace CLK.Todos.WebApp;
 
 public class HomeController : Controller
 {

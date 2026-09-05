@@ -7,6 +7,6 @@ public class ErrorViewModel
 
     public bool ShowRequestId
     {
-        get { return string.IsNullOrEmpty(RequestId) == false; }
+        get { return !string.IsNullOrEmpty(RequestId); }
     }
 }

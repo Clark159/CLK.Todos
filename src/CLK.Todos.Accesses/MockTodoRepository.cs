@@ -1,5 +1,6 @@
-namespace CLK.Todos.Accesses;
 using CLK.Todos;
+
+namespace CLK.Todos.Accesses;
 
 public class MockTodoRepository : ITodoRepository
 {

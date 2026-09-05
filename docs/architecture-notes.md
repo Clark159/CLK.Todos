@@ -50,12 +50,14 @@ src/
   `CLK.Todos.WebApp.Models`）。
 
 **namespace 宣告一律用 file-scoped 寫法**（`namespace X;`，不要用帶大括號的
-區塊寫法），而且**`namespace` 放在檔案最上面、比 `using` 陳述式還前面，
-兩者中間不空行**：
+區塊寫法）；**`using` 陳述式一樣放在檔案最上面、比 `namespace` 前面，中間
+空一行**（這是 C# 官方範本、`dotnet new`、Visual Studio 預設的順序，不要
+反過來）：
 
 ```csharp
-namespace CLK.Todos;
 using System.ComponentModel.DataAnnotations;
+
+namespace CLK.Todos;
 
 public class Todo
 {
@@ -63,7 +65,7 @@ public class Todo
 }
 ```
 
-沒有 `using` 陳述式的檔案，`namespace` 後面直接空一行接型別宣告：
+沒有 `using` 陳述式的檔案，直接從 `namespace` 開始：
 
 ```csharp
 namespace CLK.Todos;
@@ -77,9 +79,9 @@ public interface ITodoRepository
 **為什麼這樣做：** namespace 統一等於專案名稱，用一個 `using {專案名稱}`
 就能拿到整個專案的型別，不用因為挪動檔案到不同資料夾就要跟著改 namespace、
 跟著改呼叫端的 using。file-scoped 寫法比大括號區塊少一層縮排，檔案裡的
-程式碼不用整段往右推一格；`namespace` 排在 `using` 前面，代表「這個檔案
-屬於哪裡」比「這個檔案借用了哪些外部型別」更優先看到，兩者中間不空行則是
-把它們當成同一組「檔案開頭宣告」看待，不用額外空行分隔。
+程式碼不用整段往右推一格；`using`／`namespace` 的順序跟間距維持 C# 官方
+慣例，不特立獨行，這樣 IDE 自動排序 using、`dotnet format` 這類工具的
+預設行為才不會跟專案慣例打架。
 
 ## 3. Domain 專案（`CLK.Todos`）
 
@@ -219,7 +221,7 @@ public class TodoContext
 - 不同分類之間空兩行。
 - **`Imports`（`using` 陳述式）是例外，不算進上面的分類清單**：不加
   `// Imports` 這種標頭註解；`using` 陳述式的位置跟間距見第 2 節
-  （`namespace` 在最上面、`using` 緊接在後、兩者中間不空行）。
+  （`using` 在最上面、跟下面的 `namespace` 之間空一行）。
 - **屬性一律用完整的 `get` / `return` 寫法，不要用 `=>` expression-bodied
   寫法**（自動屬性 `{ get; set; }` 不受影響，這條只針對有邏輯、需要寫
   `return` 的計算屬性）。
@@ -268,7 +270,7 @@ public class TodoContext
 ## 9. 合約檢查（Guard Clause）慣例
 
 **建構子或方法的參數，一律在方法本體最前面做基本合約檢查**，並且用
-`// Contracts` 標籤（跟第 16 節「方法內部的小區塊標籤」同一套排版），
+`// Contracts` 標籤（跟第 15 節「方法內部的小區塊標籤」同一套排版），
 跟後面的邏輯空一行：
 
 - **參照型別（物件）參數**：不能為 `null`，用 `ArgumentNullException.ThrowIfNull(參數)`。
@@ -281,15 +283,13 @@ public class TodoContext
 - **每一個檢查都獨立成一行、一個判斷式，不要用 `||` / `&&` 把多個檢查
   合併成一個條件**——即使結果都是「不合法就 `return`」，也要拆開寫，
   一眼就能看出這裡總共驗證了幾件事、各自驗證什麼。
-- **布林條件不要用 `!` 取反**，改用 `== false` / `== true` 明確寫出來
-  （這其實是全專案通則，不只合約檢查適用，見第 14 節）。
 - 像 `if (條件) return ...;` 這種單一陳述式的 guard clause，**一律省略
   大括號、寫成一行**，不要展開成四行的 `if { }` 區塊——**這條不只限於
   `// Contracts` 底下的參數檢查，方法本體任何地方「不合法／找不到就
   提前 return」的單一陳述式判斷都比照辦理**（例如 `// Search` 步驟裡
   查無資料就回傳的判斷）。
 
-`// Contracts` 的格式：**標籤緊接著第一個檢查、不空行**（跟第 16 節的
+`// Contracts` 的格式：**標籤緊接著第一個檢查、不空行**（跟第 15 節的
 標籤規則一致）；如果檢查內容不只一行，**內容彼此之間也不空行**（緊貼在
 一起）；檢查結束後，跟後面的邏輯空一行：
 
@@ -328,7 +328,7 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 {
     // Contracts
     ArgumentNullException.ThrowIfNull(todo);
-    if (ModelState.IsValid == false) return View(todo);
+    if (!ModelState.IsValid) return View(todo);
 
     // Execute
     _todoContext.TodoRepository.Add(todo);
@@ -346,7 +346,7 @@ public IActionResult Edit(Guid todoId, [Bind("TodoId,Title,IsDone")] Todo todo =
     // Contracts
     ArgumentNullException.ThrowIfNull(todo);
     if (todoId != todo.TodoId) return View(todo);
-    if (ModelState.IsValid == false) return View(todo);
+    if (!ModelState.IsValid) return View(todo);
 
     // Execute
     _todoContext.TodoRepository.Update(todo);
@@ -357,7 +357,7 @@ public IActionResult Edit(Guid todoId, [Bind("TodoId,Title,IsDone")] Todo todo =
 ```
 
 **為什麼這樣做：** `// Contracts` 標籤讓「這個方法對輸入的基本要求是什麼」
-從外觀就能一眼認出來，不會跟後面真正的商業邏輯混在一起看；跟第 16 節的
+從外觀就能一眼認出來，不會跟後面真正的商業邏輯混在一起看；跟第 15 節的
 其他步驟標籤是同一套視覺語言，不用另外學一種排版，也不必靠 `#region`
 摺疊/展開才能看清楚檢查內容。
 
@@ -552,31 +552,7 @@ public bool Update(Todo todo)
 特殊情況」跟「這是正常要交付的結果」清楚分開，不用逐行讀邏輯才能找到
 真正的輸出在哪裡。
 
-## 14. `!` 取反運算子：邏輯判斷不要用，翻轉布林值可以用
-
-**判斷式／布林運算式（用來做決策、回答「是不是」的地方）不要用 `!`**，
-改用 `== false` / `== true` 明確寫出來；**單純翻轉一個布林值本身的狀態
-（不是在做判斷）可以用 `!`**：
-
-| 情境 | 寫法 | 範例 |
-|---|---|---|
-| 判斷式（邏輯判斷） | 用 `== false` / `== true` | `if (ModelState.IsValid == false)` |
-| 布林運算式（回答「是不是」） | 用 `== false` / `== true` | `return string.IsNullOrEmpty(RequestId) == false;` |
-| 賦值（單純翻轉狀態，不是判斷） | 可以用 `!` | `IsDone = !IsDone;` |
-
-目前套用的地方：判斷式／布林運算式——`Program.cs` 的
-`app.Environment.IsDevelopment()` 判斷、`ErrorViewModel.ShowRequestId`、
-第 9 節 `// Contracts` 標籤底下所有布林判斷；翻轉布林值——
-`Todo.ToggleDone()`。
-
-**為什麼這樣做：** 判斷式的 `!` 容易被忽略，誤讀整段邏輯的方向（尤其
-跟方法呼叫連在一起時，例如 `!string.IsNullOrEmpty(x)` 很容易漏看那個
-`!`），所以判斷一律用 `== false` / `== true` 讓意圖攤開來看。但單純翻轉
-一個布林值（例如切換開關狀態）不是「判斷」、沒有邏輯方向要辨認，`!IsDone`
-比 `IsDone == false` 更直接表達「變成相反的值」這個意圖，這種情境可以用
-`!`。
-
-## 15. 呼叫自己的方法或屬性不加 `this.`
+## 14. 呼叫自己的方法或屬性不加 `this.`
 
 **在類別內部呼叫自己（包含繼承來的）方法或屬性，一律不加 `this.` 前綴**：
 
@@ -602,7 +578,7 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 {
     // Contracts
     ArgumentNullException.ThrowIfNull(todo);
-    if (ModelState.IsValid == false) return View(todo);
+    if (!ModelState.IsValid) return View(todo);
 
     _todoContext.TodoRepository.Add(todo);
 
@@ -620,7 +596,7 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 「這是自己的成員」；省略之後每一行都少一截視覺雜訊，看程式碼的人一樣能
 從命名（`_` 前綴 vs. 沒有前綴）判斷出處，不需要額外的前綴當提示。
 
-## 16. 方法內部的小區塊標籤
+## 15. 方法內部的小區塊標籤
 
 **方法本體避免寫太深的巢狀，盡量拆成一個個平鋪的區塊**，每個區塊前面
 加一個單字的小註解講清楚這個區塊在做什麼——**註解只是提示這個區塊的
@@ -705,7 +681,7 @@ public IActionResult Toggle(Guid todoId)
 `if`／`else`／迴圈疊在一起）光看縮排就很難分辨區塊邊界，盡量用提前
 `return`（見第 9 節）把邏輯攤平成一層層平鋪的區塊，標籤才有意義。
 
-## 17. Entity 主鍵：命名 `{Entity}Id`、優先使用 GUIDv7
+## 16. Entity 主鍵：命名 `{Entity}Id`、優先使用 GUIDv7
 
 **Entity 的主鍵屬性一律命名 `{Entity}Id`，不要用單純的 `Id`**（例如
 `Todo` 的主鍵是 `TodoId`，不是 `Id`）；型別優先用 `Guid`，並且用
@@ -731,7 +707,7 @@ public class Todo
     `{controller=Todos}/{action=Index}/{todoId?}`，不是泛用的 `{id?}`。
   - View：`asp-route-todoId="@todo.TodoId"`（不是 `asp-route-id`）。
 - **產生時機**：由 Repository 的 `Add` 方法在寫入當下呼叫
-  `Guid.CreateVersion7()` 賦值給 `todo.TodoId`（見第 16 節
+  `Guid.CreateVersion7()` 賦值給 `todo.TodoId`（見第 15 節
   `MockTodoRepository.Add` 的 `// Execute` 區塊），呼叫端不用自己組 id。
 - **不需要**額外的流水號欄位（例如 `_nextId`）——GUIDv7 本身已經具備
   時間排序性，拿掉計數器後 Repository 也少一個要處理併發遞增的欄位。
@@ -753,7 +729,7 @@ id 屬於哪個 Entity，不用回頭看是哪張表／哪個型別；`int` 流�
 下一個號碼是多少，同時前 48 bit 是時間戳，天生照建立時間排序，比純隨機
 的 v4 更適合當資料庫索引鍵、也比 `int` 更難被外部猜測、列舉。
 
-## 18. Entity 稽核時間戳記：`CreateTime` 與 `UpdateTime`
+## 17. Entity 稽核時間戳記：`CreateTime` 與 `UpdateTime`
 
 **Entity 記錄建立時間的屬性一律叫 `CreateTime`（不是 `CreatedAt`），
 更新時間叫 `UpdateTime`**，兩者都是 `DateTime`，**一律存 UTC**，預設值

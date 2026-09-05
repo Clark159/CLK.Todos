@@ -1,6 +1,7 @@
-namespace CLK.Todos.WebApp;
 using CLK.Todos;
 using Microsoft.AspNetCore.Mvc;
+
+namespace CLK.Todos.WebApp;
 
 public class TodosController : Controller
 {
@@ -44,7 +45,7 @@ public class TodosController : Controller
     {
         // Contracts
         ArgumentNullException.ThrowIfNull(todo);
-        if (ModelState.IsValid == false) return View(todo);
+        if (!ModelState.IsValid) return View(todo);
 
         // Execute
         _todoContext.TodoRepository.Add(todo);
@@ -72,7 +73,7 @@ public class TodosController : Controller
         // Contracts
         ArgumentNullException.ThrowIfNull(todo);
         if (todoId != todo.TodoId) return View(todo);
-        if (ModelState.IsValid == false) return View(todo);
+        if (!ModelState.IsValid) return View(todo);
 
         // Execute
         _todoContext.TodoRepository.Update(todo);
