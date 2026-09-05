@@ -21,6 +21,7 @@
 9. [Context 設計規則](#9-context-設計規則)
 10. [Repository 設計規則](#10-repository-設計規則)
 11. [Entity 設計規則](#11-entity-設計規則)
+12. [Dependency Injection 設計規則](#12-dependency-injection-設計規則)
 
 ## 1. Workspace 設計規則
 
@@ -48,9 +49,9 @@ CLK.Todos/                   repo 根目錄
 │   └── architecture-notes.md
 └── src/
     ├── CLK.Todos.sln
-    ├── CLK.Todos/              Domain 層
-    ├── CLK.Todos.Accesses/     Access 層
-    └── CLK.Todos.WebApp/       Host 層
+    ├── CLK.Todos/
+    ├── CLK.Todos.Accesses/
+    └── CLK.Todos.WebApp/
 ```
 
 **說明**
@@ -77,6 +78,18 @@ CLK.Todos/                   repo 根目錄
   Console 工具），都依賴同一個 `{Domain}.Accesses`／`{Domain}`。
 - 一個 `.sln` 可以同時有多組 `{Domain}`／`{Domain}.Accesses`／Host 層
   專案，各組 `{Domain}` 之間彼此獨立、不共用 Repository 介面或 Context。
+
+**範例**
+
+- `src/` 分層對應（本專案：CLK.Todos）
+
+```
+src/
+├── CLK.Todos.sln
+├── CLK.Todos/              Domain 層
+├── CLK.Todos.Accesses/     Access 層
+└── CLK.Todos.WebApp/       Host 層
+```
 
 **說明**
 
@@ -304,14 +317,14 @@ public ITodoRepository TodoRepository
   | `// Create` | 建立一個接下來要用的物件實例（例如 `IDbContextFactory` 建立 `DbContext`） |
   | `// Variables`／`// Define`／`// Require`／`// Arguments`／`// Notify`／`// Raise` | 尚無實例，先保留定義，遇到對應場景再套用 |
 
-- `// Contracts`：方法（或建構子）參數的合約檢查放最前面：
-  - 參照型別參數：不能為 `null` → `ArgumentNullException.ThrowIfNull(參數)`。
-  - 字串參數：不能為 `null`／空白 → `ArgumentException.ThrowIfNullOrWhiteSpace(參數)`。
-  - 值型別參數（`int`、`bool`、`DateTime`）不需要檢查。
-  - MVC 驗證判斷（`ModelState.IsValid`、路由 id 跟表單 id 是否一致）也算
-    合約檢查，放進同一個 `// Contracts` 底下。
-  - 每個檢查獨立一行，不用 `||`／`&&` 合併；檢查之間不空行，跟後面邏輯空
-    一行。
+- `// Contracts` 放在方法（或建構子）本體最前面，檢查參數合約。
+- 參照型別參數不能為 `null`：`ArgumentNullException.ThrowIfNull(參數)`。
+- 字串參數不能為 `null`／空白：`ArgumentException.ThrowIfNullOrWhiteSpace(參數)`。
+- 值型別參數（`int`、`bool`、`DateTime`）不需要檢查。
+- MVC 驗證判斷（`ModelState.IsValid`、路由 id 跟表單 id 是否一致）也算合約
+  檢查，放進同一個 `// Contracts` 底下。
+- `// Contracts` 內每個檢查獨立一行，不用 `||`／`&&` 合併；檢查之間不空行，
+  跟後面邏輯空一行。
 - `// Return`：方法裡真正交付結果的最後一個 `return` 才標；guard
   clause 式的提前 `return`（例如 `if (todo is null) return NotFound();`）
   不用標。回傳型別是 `void` 的方法（例如 `Update`／`Remove` 找不到就丟
@@ -379,20 +392,12 @@ public IActionResult Create([Bind("Title")] Todo? todo = null)
   注入進來，用唯讀屬性對外提供。
 - 外部呼叫端（Controller 等）一律注入 `{Domain}Context` 來使用 Repository，
   不直接注入個別 Repository 介面。
-- 在 Host 層專案的進入點檔案（例如 `{Domain}.WebApp/Program.cs`）用
-  `AddSingleton<{Domain}Context>()` 註冊。
 - `{Domain}Context` 每個 `{Domain}` 只有一個，不隨 Entity 數量增加而變多：
   同一個 `{Domain}` 新增 Entity 時，是在既有的 Context 上多加一個
   Repository 屬性，不是另外開一個新的 Context；一個 `.sln` 有多個
   `{Domain}` 時，每個 `{Domain}` 各自有自己的 Context，彼此不共用。
 
 **範例**
-
-- DI 註冊
-
-```csharp
-builder.Services.AddSingleton<TodoContext>();
-```
 
 - `{Domain}` 只有一個 Entity 時的巧合命名（本專案：CLK.Todos 目前只有
   `Todo` 一個 `{Domain}`，`{Domain}` 新增 `Category` Entity 時，是在
@@ -417,6 +422,27 @@ builder.Services.AddSingleton<TodoContext>();
 - 刪除方法一律叫 `Remove`，不叫 `Delete`。
 - 查詢命名：`Find` 開頭查單筆（回傳 `{Entity}?`）；`FindAll` 開頭查
   多筆（回傳 `IReadOnlyList<{Entity}>`）。
+- 方法順序與命名樣板：
+
+```csharp
+void Add({Entity} entity);
+
+void Update({Entity} entity);
+
+void Remove(Guid {entity}Id);
+
+{Entity}? FindByXX(Guid {entity}Id);
+
+IReadOnlyList<{Entity}> FindAll();
+
+IReadOnlyList<{Entity}> FindAllByXX();
+```
+
+- `Add` 不用額外檢查主鍵是否已存在。
+- `Add` 把 `CreateTime`／`UpdateTime` 都重新蓋上 `DateTime.UtcNow`，不信任
+  物件建構當下的預設值。
+- `Update` 維持 `CreateTime` 既有值不覆寫，只把 `UpdateTime` 重新蓋上，不
+  信任呼叫端傳進來的值。
 - 失敗語意依方法類型分兩種，不混用：Query 方法（`Find` 開頭）用回傳值
   本身表達「找不到」（`null`／空集合）；Command 方法（`Add`／`Update`／
   `Remove`）一律回傳 `void`，找不到對應資料就直接丟例外
@@ -427,34 +453,14 @@ builder.Services.AddSingleton<TodoContext>();
   （例如「切換完成狀態」）。不要在 Repository 開
   `Toggle{XX}(Guid {entity}Id)` 這種直接用 id 操作、把邏輯藏在 Repository
   裡的方法。
-- DI 註冊：每個 Repository 介面對實作，在 Host 層專案的進入點檔案（例如
-  `{Domain}.WebApp/Program.cs`）註冊一次
-  `AddSingleton<I{Entity}Repository, Mock{Entity}Repository>()`。
-- 真實資料庫實作（`Ef{Entity}Repository`）維持 Singleton，不改成 Scoped：
-  建構子注入 `IDbContextFactory<{Domain}DbContext>`，而不是直接注入
-  `{Domain}DbContext`；每個方法內部呼叫
-  `_todoDbContextFactory.CreateDbContext()` 各自建立一個短命的
-  `DbContext`，用 `using (...) { }` 明確大括號區塊包起來（不用
-  `using var` 宣告式寫法），區塊結束就 `Dispose`。
-  `AddDbContextFactory<{Domain}DbContext>()` 搭配
-  `AddSingleton<I{Entity}Repository, Ef{Entity}Repository>()` 註冊。
+- 真實資料庫實作（`Ef{Entity}Repository`）建構子注入
+  `IDbContextFactory<{Domain}DbContext>`，每個方法內用 `using (...) { }`
+  （不用 `using var`）建立短命 `DbContext`，區塊結束就 `Dispose`。
 
 **範例**
 
 - 命名：`ITodoRepository`、`MockTodoRepository`。
-- DI 註冊
-
-```csharp
-builder.Services.AddSingleton<ITodoRepository, MockTodoRepository>();
-```
-
-- `EfTodoRepository`：Singleton 搭配 `IDbContextFactory`
-
-```csharp
-builder.Services.AddDbContextFactory<TodoDbContext>(options =>
-    options.UseSqlServer(connectionString));
-builder.Services.AddSingleton<ITodoRepository, EfTodoRepository>();
-```
+- `EfTodoRepository`：搭配 `IDbContextFactory`
 
 ```csharp
 public class EfTodoRepository : ITodoRepository
@@ -493,22 +499,6 @@ public class EfTodoRepository : ITodoRepository
 }
 ```
 
-- 方法順序與命名樣板
-
-```csharp
-void Add({Entity} entity);
-
-void Update({Entity} entity);
-
-void Remove(Guid {entity}Id);
-
-{Entity}? FindByXX(Guid {entity}Id);
-
-IReadOnlyList<{Entity}> FindAll();
-
-IReadOnlyList<{Entity}> FindAllByXX();
-```
-
 **說明**
 
 介面／實作分開命名，一看類別名稱就知道它是不是「真的會持久化」，避免
@@ -516,46 +506,43 @@ Mock 跟真正接資料庫的實作混用同一套命名造成誤會；固定方
 讓任何 Repository 介面都好找、好猜回傳型別；業務邏輯留在 Entity（充血
 模型），Repository 維持單純的存取角色。
 
+主鍵不用檢查重複，是因為外部提供的 GUIDv7 碰撞機率低到可忽略；稽核時間戳記
+統一由 Repository 的 `Add`／`Update` 蓋，不用各呼叫端各自處理——`Add` 不
+信任物件建構當下的預設值、`Update` 不信任呼叫端傳進來的值，都是為了避免
+呼叫端忘記蓋或蓋錯。
+
 Query／Command 失敗語意分開，是因為兩者「找不到」的意義不同：Query 呼叫端
 本來就不確定資料在不在，找不到是正常結果的一部分；Command 呼叫前理應已經
-用 `FindById` 確認過資料存在（見 [Entity 設計規則](#11-entity-設計規則)
-的呼叫端標準流程），這裡若仍找不到代表資料在兩次操作之間被異動（例如被
+用 `FindById` 確認過資料存在，這裡若仍找不到代表資料在兩次操作之間被異動（例如被
 其他請求刪除），屬於例外狀況，用例外表達比回傳 `bool` 更能凸顯「這不是
 預期路徑」。
 
-所有 Repository 實作統一用 Singleton 註冊，不用因為換成真實資料庫實作就
-另外設計一套 Scoped 的規則；`DbContext` 本身不是 thread-safe、生命週期
-本應是 Scoped，但改成建構子注入 `IDbContextFactory` 之後，把這件事下放到
-每個方法自己處理（各自建立、各自 `Dispose`），DI 生命週期規則本身就能
-維持全專案一致，不用為了 EF 另開一套。
+`DbContext` 本身不是 thread-safe、生命週期本應是 Scoped，但這個專案的
+Repository 實作全部走 Singleton，所以改成建構子注入 `IDbContextFactory`，
+把「取得 `DbContext`」這件事下放
+到每個方法自己處理（各自建立、各自 `Dispose`），不用為了 EF 另開一套
+Scoped 的規則。
 
 ## 11. Entity 設計規則
 
 **規則**
 
 - 主鍵：屬性命名 `{Entity}Id`（不要單純的 `Id`），型別 `Guid`，用
-  `Guid.CreateVersion7()` 產生（不是隨機無序的 `Guid.NewGuid()`），不用
-  `int` 流水號。由 Entity 屬性預設值在建立當下產生、外部提供，Repository
-  不再自己產生。
-  - 所有代表這個主鍵的變數／參數統一命名 `{entity}Id`，貫穿 Repository、
-    Controller action 參數、MVC 路由樣板（`{{entity}Id?}`，不是泛用
-    `{id?}`）、View 的 `asp-route-{entity}Id`，不留通用的 `id`。
-  - 不處理重複檢查：Repository 的 `Add` 不用額外檢查主鍵是否已存在。
+  `Guid.CreateVersion7()` 產生（不是 `Guid.NewGuid()`），不用 `int` 流水
+  號；由 Entity 屬性預設值在建立當下產生，Repository 不再自己產生。
+- 主鍵變數／參數統一命名 `{entity}Id`，貫穿 Repository、Controller action
+  參數、MVC 路由樣板（`{{entity}Id?}`，不是泛用 `{id?}`）、View 的
+  `asp-route-{entity}Id`，不留通用的 `id`。
 - 稽核時間戳記：`CreateTime`（不是 `CreatedAt`）、`UpdateTime`，型別
-  `DateTime`，一律存 UTC，預設值 `DateTime.UtcNow`（不是 `DateTime.Now`）。
-  這條是全專案通則，任何時間戳記都比照辦理；需要顯示當地時間才在畫面層轉換。
-  - `Add`：`CreateTime`／`UpdateTime` 都在 Repository 的 `Add` 方法寫入
-    當下重新蓋上 `DateTime.UtcNow`，不信任物件建構當下的預設值。
-  - `Update`：`CreateTime` 維持既有值不覆寫；`UpdateTime` 由 `Update`
-    方法在寫入當下重新蓋上，不信任呼叫端傳進來的值。
-  - Entity 上的狀態轉換方法（例如 `ToggleDone()`）不用自己碰
-    `UpdateTime`——經過 Repository 的 `Update` 就一定會蓋到。
+  `DateTime`，一律存 UTC，預設值 `DateTime.UtcNow`（不是 `DateTime.Now`）；
+  這條是全專案通則，任何時間戳記都比照辦理，需要顯示當地時間才在畫面層
+  轉換。
+- Entity 狀態轉換方法（例如 `ToggleDone()`）不用自己碰 `UpdateTime`，
+  經過 Repository 的 `Update` 就一定會蓋到。
 - 充血模型（Rich Domain Model）：跟 Entity 自身狀態有關的業務邏輯，一律
   寫成 Entity 上的方法，不要寫在 Repository 或 Controller 裡。
-  - 呼叫端標準流程：Repository 查出 Entity → 呼叫 Entity 方法改變狀態
-    → Repository 存回去。不要在 Repository 開
-    `Toggle{XX}(Guid {entity}Id)` 這種直接用 id 操作、把邏輯藏在
-    Repository 裡的方法。
+- 呼叫端標準流程：Repository 查出 Entity → 呼叫 Entity 方法改變狀態 →
+  Repository 存回去。
 
 **範例**
 
@@ -604,10 +591,50 @@ public IActionResult Toggle(Guid todoId)
 **說明**
 
 `{Entity}Id` 一看就知道屬於哪個 Entity；GUIDv7 可在用戶端產生、天生依建立
-時間排序，比 `int` 流水號更適合當索引鍵、也更安全；碰撞機率低到可忽略，
-不需要額外的唯一性檢查機制。時間戳記統一由
-Repository 的 `Add`／`Update` 蓋，不用各呼叫端各自處理；UTC 是不受時區
-影響的絕對基準，跨伺服器也一致。避免「貧血模型」（Entity 只有屬性沒有
-行為，邏輯散落在 Service／Controller／Repository 各處，同一規則被實作
-兩三次）——邏輯跟著資料放在一起，不管從 Controller、Console 工具還是測試
-呼叫，規則都保證一致。
+時間排序，比 `int` 流水號更適合當索引鍵、也更安全。UTC 是不受時區影響的
+絕對基準，跨伺服器也一致。避免「貧血模型」（Entity 只有屬性沒有行為，邏輯
+散落在 Service／Controller／Repository 各處，同一規則被實作兩三次）——
+邏輯跟著資料放在一起，不管從 Controller、Console 工具還是測試呼叫，規則
+都保證一致。
+
+## 12. Dependency Injection 設計規則
+
+**規則**
+
+- Domain 層（`{Domain}Context`）與 Access 層（Repository 實作，不論
+  Mock 或真實資料庫）在 DI 容器裡一律用 Singleton 生命週期註冊。
+- 所有 DI 註冊都寫在 Host 層專案的進入點檔案（例如
+  `{Domain}.WebApp/Program.cs`）。
+- 註冊順序：先註冊 Repository 介面對實作，再註冊 `{Domain}Context`——
+  跟建構子相依方向（Context 依賴 Repository）一致。
+- 非持久化實作：`AddSingleton<I{Entity}Repository, Mock{Entity}Repository>()`。
+- 真實資料庫實作：`AddDbContextFactory<{Domain}DbContext>()` 搭配
+  `AddSingleton<I{Entity}Repository, Ef{Entity}Repository>()`。
+- `{Domain}Context`：`AddSingleton<{Domain}Context>()`。
+- Host 層本身的生命週期（例如 MVC Controller 每個請求一個實例）由
+  ASP.NET Core 框架管理，不在這裡的規範範圍內。
+
+**範例**
+
+- `Program.cs`（非持久化實作）
+
+```csharp
+builder.Services.AddSingleton<ITodoRepository, MockTodoRepository>();
+builder.Services.AddSingleton<TodoContext>();
+```
+
+- `Program.cs`（真實資料庫實作）
+
+```csharp
+builder.Services.AddDbContextFactory<TodoDbContext>(options =>
+    options.UseSqlServer(connectionString));
+builder.Services.AddSingleton<ITodoRepository, EfTodoRepository>();
+builder.Services.AddSingleton<TodoContext>();
+```
+
+**說明**
+
+Domain／Access 兩層都不持有跟單一 HTTP 請求綁定的狀態——Repository 只是
+資料存取的入口，Context 只是聚合這些入口——用 Singleton 可以避免每個請求
+都重新建立一整條相依鏈；也讓「所有 Repository 實作的生命週期規則一致」這
+件事，不因為 Mock 換成真實資料庫實作而被打破。
