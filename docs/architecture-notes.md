@@ -1,7 +1,7 @@
-# .NET 架構設計規則
+# .NET 設計規範
 
 這份文件涵蓋 .NET 專案的目錄與分層結構（Workspace／Architecture）、程式碼
-撰寫慣例（Namespace／Class／Constructor／Method），以及 Domain 層的設計規則
+撰寫慣例（Namespace／Class／Constructor／Method），以及 Domain 層的設計規範
 （Context／Repository／Entity）。
 
 > 每一節統一用「規則 → 範例 → 說明」整理。規則一律用 `{Domain}`、
@@ -10,20 +10,20 @@
 
 ## 目錄
 
-1. [Workspace 設計規則](#1-workspace-設計規則)
-2. [Architecture 設計規則](#2-architecture-設計規則)
-3. [Namespace 設計規則](#3-namespace-設計規則)
-4. [Class 設計規則](#4-class-設計規則)
-5. [Field 設計規則](#5-field-設計規則)
-6. [Constructor 設計規則](#6-constructor-設計規則)
-7. [Properties 設計規則](#7-properties-設計規則)
-8. [Method 設計規則](#8-method-設計規則)
-9. [Context 設計規則](#9-context-設計規則)
-10. [Repository 設計規則](#10-repository-設計規則)
-11. [Entity 設計規則](#11-entity-設計規則)
-12. [Dependency Injection 設計規則](#12-dependency-injection-設計規則)
+1. [Workspace 設計規範](#1-workspace-設計規範)
+2. [Architecture 設計規範](#2-architecture-設計規範)
+3. [Namespace 設計規範](#3-namespace-設計規範)
+4. [Class 設計規範](#4-class-設計規範)
+5. [Field 設計規範](#5-field-設計規範)
+6. [Constructor 設計規範](#6-constructor-設計規範)
+7. [Properties 設計規範](#7-properties-設計規範)
+8. [Method 設計規範](#8-method-設計規範)
+9. [Context 設計規範](#9-context-設計規範)
+10. [Repository 設計規範](#10-repository-設計規範)
+11. [Entity 設計規範](#11-entity-設計規範)
+12. [Dependency Injection 設計規範](#12-dependency-injection-設計規範)
 
-## 1. Workspace 設計規則
+## 1. Workspace 設計規範
 
 **規則**
 
@@ -58,7 +58,7 @@ CLK.Todos/                   repo 根目錄
 
 依用途分類，避免根目錄堆滿雜項檔案。
 
-## 2. Architecture 設計規則
+## 2. Architecture 設計規範
 
 **規則**
 
@@ -96,7 +96,7 @@ src/
 分層相依單向、無循環參照，抽換任一層不影響下層；Domain 不依賴框架，可被
 多個 Host 層專案重複使用；介面與實作分離，換實作不動 Domain。
 
-## 3. Namespace 設計規則
+## 3. Namespace 設計規範
 
 **規則**
 
@@ -134,7 +134,7 @@ namespace 等於專案名稱，一個 `using` 就能取用整個專案型別，�
 避免跟 IDE、`dotnet format` 打架。`{Domain}.WebApp` 維持 MVC 慣例資料夾是
 因為 Razor 慣例路由依賴這個結構，屬於框架限制，不是這裡自訂的規則。
 
-## 4. Class 設計規則
+## 4. Class 設計規範
 
 **規則**
 
@@ -198,7 +198,7 @@ public class TodoContext
 `// Fields`）；省略 `this.` 減少視覺雜訊——欄位已經靠 `_` 前綴、參數靠
 命名跟成員區分，不需要 `this.` 才能辨識。
 
-## 5. Field 設計規則
+## 5. Field 設計規範
 
 **規則**
 
@@ -225,7 +225,7 @@ public class MockTodoRepository : ITodoRepository
 避免建構後被意外改動；lock 物件排最前面，一眼就能看出這個類別有執行緒
 安全考量。
 
-## 6. Constructor 設計規則
+## 6. Constructor 設計規範
 
 適用於所有類別，不限於某一層。
 
@@ -269,7 +269,7 @@ public class TodoContext
 
 `// Default` 讓建構子清楚分成合約檢查跟賦值兩階段。
 
-## 7. Properties 設計規則
+## 7. Properties 設計規範
 
 **規則**
 
@@ -296,7 +296,7 @@ public ITodoRepository TodoRepository
 `get`／`return` 寫法在需要展開邏輯時保持一致風格，單行屬性縮成一行則避免
 不必要的視覺膨脹。
 
-## 8. Method 設計規則
+## 8. Method 設計規範
 
 **規則**
 
@@ -382,7 +382,7 @@ public IActionResult Create([Bind("Title")] Todo? todo = null)
 正常結果跟其他邏輯區隔開來。guard clause 式的提前 `return` 不標
 `// Return`，是因為已經被 `if` 自我解釋，不需要標籤重複說明。
 
-## 9. Context 設計規則
+## 9. Context 設計規範
 
 **規則**
 
@@ -436,7 +436,7 @@ public class TodoContext
 `TodoContext` 剛好跟 `{Entity}Context` 同名只是巧合，不代表 Context 是
 跟著 Entity 命名的。
 
-## 10. Repository 設計規則
+## 10. Repository 設計規範
 
 **規則**
 
@@ -547,7 +547,7 @@ Repository 實作全部走 Singleton，所以改成建構子注入 `IDbContextFa
 把「取得 `DbContext`」這件事下放到每個方法自己處理（各自建立、各自
 `Dispose`），不用為了 EF 另開一套 Scoped 的規則。
 
-## 11. Entity 設計規則
+## 11. Entity 設計規範
 
 **規則**
 
@@ -621,7 +621,7 @@ public IActionResult Toggle(Guid todoId)
 邏輯跟著資料放在一起，不管從 Controller、Console 工具還是測試呼叫，規則
 都保證一致。
 
-## 12. Dependency Injection 設計規則
+## 12. Dependency Injection 設計規範
 
 **規則**
 
