@@ -1,71 +1,78 @@
-# .NET 架構規則
+# .NET 架構設計規則
 
 這份文件是 .NET 分層架構的規則，適用於 Domain／Accesses 這類共用層，也適用於
-各種進入點專案（ASP.NET MVC、Console、Blazor 等）。規則異動時直接更新對應
-章節，不用時間順序流水帳記錄，避免舊規則跟新規則互相矛盾。
+各種進入點專案（ASP.NET MVC、Console、Blazor 等）。
 
 > 每一節統一用「規則 → 範例 → 說明」整理。**規則一律用 `{Solution}`、
-> `{Entity}` 佔位符描述，不綁定具體名稱**。**範例**具體標註本專案
-> （CLK.Todos）用 `Todo` 這個 Entity 示範規則的樣子，是規則的**一個實例**，
-> 不是規則本身。
+> `{Entity}` 佔位符描述，不綁定具體名稱**。**範例**具體標註 CLK.Todos 專案裡
+> `Todo` 這個 Entity 示範規則的樣子，是規則的**一個實例**，不是規則本身。
 
 ## 目錄
 
-1. [Architecture 設計規則](#1-architecture-設計規則)
-2. [Namespace 設計規則](#2-namespace-設計規則)
-3. [Class 設計規則](#3-class-設計規則)
-4. [Constructor 設計規則](#4-constructor-設計規則)
-5. [Method 設計規則](#5-method-設計規則)
-6. [Context 設計規則](#6-context-設計規則)
-7. [Repository 設計規則](#7-repository-設計規則)
-8. [Entity 設計規則](#8-entity-設計規則)
+1. [Workspace 設計規則](#1-workspace-設計規則)
+2. [Architecture 設計規則](#2-architecture-設計規則)
+3. [Namespace 設計規則](#3-namespace-設計規則)
+4. [Class 設計規則](#4-class-設計規則)
+5. [Constructor 設計規則](#5-constructor-設計規則)
+6. [Method 設計規則](#6-method-設計規則)
+7. [Context 設計規則](#7-context-設計規則)
+8. [Repository 設計規則](#8-repository-設計規則)
+9. [Entity 設計規則](#9-entity-設計規則)
 
-## 1. Architecture 設計規則
+## 1. Workspace 設計規則
 
 **規則**
 
-- 三層專案，相依方向單向：`{Solution}.WebApp` → `{Solution}.Accesses` →
-  `{Solution}`。`{Solution}.sln` 跟三個專案放在 `src/` 底下，不放 repo
-  根目錄（根目錄只留 `README.md`、`.gitignore`、`docs/` 這類跟建置無關的東西）。
-- **`{Solution}`（Domain）**：純類別庫，**只依賴 .NET BCL**，不參照 ASP.NET
-  Core。不拆資料夾，檔案直接放根目錄，靠 namespace（見第 2 節）辨識：
-  - Entity（`{Entity}.cs`，規則見「Entity 設計規則」）、Repository 介面
-    （`I{Entity}Repository`，只放介面不放實作，方法規則見「Repository 設計
-    規則」）。
-  - `{Solution}Context`：Domain 入口物件，規則見「Context 設計規則」。
-- **`{Solution}.Accesses`**：獨立類別庫，參照 `{Solution}`，專門放 Repository
-  介面的實作，一樣不拆資料夾。
-- **`{Solution}.WebApp`**：表現層，**維持 MVC 慣例資料夾**
-  （`Controllers/`／`Models/`／`Views/`），因為 Razor 慣例路由依賴這個結構。
-  只有這層需要靠資料夾分類，其餘兩層靠 namespace 就夠。
-- **可執行的進入點專案命名**：一律 `{Solution}.{類型}App`（ASP.NET MVC 網站
-  是 `{Solution}.WebApp`；Console 程式尚未使用，先預留 `{Solution}.ConsoleApp`）
-  ——跟 Domain／Accesses 這類不能單獨執行的類別庫明確區分。
-- **DI 註冊**（在 `{Solution}.WebApp/Program.cs`）：每個 Repository 介面對
-  實作註冊一次 `AddSingleton<I{Entity}Repository, Mock{Entity}Repository>()`，
-  `{Solution}Context` 本身也要註冊 `AddSingleton<{Solution}Context>()`。
+- **`src/`**：所有原始碼專案放這裡，`{Solution}.sln` 跟所有專案同一層，
+  不放 repo 根目錄。之後新增測試專案，一律放 `tests/`，跟 `src/` 同一層。
+- **`docs/`**：架構規則、設計文件這類跟程式碼相關但不參與建置的文件放這裡
+  （例如這份 `architecture-notes.md`）。
+- **`README.md`**：專案說明，放 repo 根目錄。
+- **`.gitignore`**：Git 版本控制排除清單，放 repo 根目錄。
+- **repo 根目錄只留上述這類跟建置無關的東西**，不放任何 `.sln`／專案檔案。
 
 **範例**
 
 ```
-src/
-├── CLK.Todos.sln
-├── CLK.Todos/              Domain 層
-│   ├── TodoContext.cs
-│   ├── Todo.cs
-│   └── ITodoRepository.cs
-├── CLK.Todos.Accesses/     資料存取實作層
-│   └── MockTodoRepository.cs
-└── CLK.Todos.WebApp/       表現層
-    ├── Controllers/
-    ├── Models/
-    └── Views/
+CLK.Todos/                   repo 根目錄
+├── README.md
+├── .gitignore
+├── docs/
+│   └── architecture-notes.md
+└── src/
+    ├── CLK.Todos.sln
+    ├── CLK.Todos/              Domain 層
+    ├── CLK.Todos.Accesses/     Access 層
+    └── CLK.Todos.WebApp/       Presentation 層
 ```
 
-```csharp
-builder.Services.AddSingleton<ITodoRepository, MockTodoRepository>();
-builder.Services.AddSingleton<TodoContext>();
-```
+**說明**
+
+repo 根目錄保持乾淨，一眼就能分辨「這是原始碼」「這是文件」還是「這是版控
+設定」；`src/`／`docs/`／未來的 `tests/` 各自對稱、平行放在根目錄下，不會
+因為專案長大而讓根目錄堆滿雜項檔案。
+
+## 2. Architecture 設計規則
+
+**規則**
+
+- **`{Solution}`**：類別庫專案。Domain 層，存放 Entity、
+  Repository 介面與 Context，定義業務核心邏輯與規格，不依賴任何框架。
+- **`{Solution}.Accesses`**：類別庫專案。Access 層，存放 Repository 介面的
+  實作，負責實際資料存取（資料庫、記憶體等）。
+- **`{Solution}.WebApp`**：ASP.NET MVC 專案。Presentation 層，提供網頁使用者介面的進入點。
+- **`{Solution}.BlazorApp`**：Blazor 專案。Presentation 層，提供互動式網頁應用的進入點。
+- **`{Solution}.WorkerApp`**：Worker Service 專案。Presentation 層，提供背景服務的進入點。
+- **`{Solution}.ConsoleApp`**：Console 專案。Presentation 層，提供命令列工具的進入點（例如
+  批次匯入、排程工作）。
+- **相依方向單向**：進入點專案 → `{Solution}.Accesses` → `{Solution}`。
+- **可執行的進入點專案，命名一律 `{Solution}.{類型}App`**，跟 Domain／Accesses
+  這類不能單獨執行的類別庫明確區分。
+- 同一個 Solution 可以同時有多個進入點專案（例如網站＋批次匯入用的 Console
+  工具），都依賴同一個 `{Solution}.Accesses`／`{Solution}`。
+
+各專案內部要放什麼、怎麼組織，見對應章節：Namespace／Class 設計規則（檔案與
+命名組織）、Context／Repository／Entity 設計規則（Domain 內容）。
 
 **說明**
 
@@ -73,7 +80,7 @@ builder.Services.AddSingleton<TodoContext>();
 框架，之後才能被其他專案型態（Console、Worker）重複使用；「規格」（介面）跟
 「實作」分開，換實作時 Domain 完全不用改。
 
-## 2. Namespace 設計規則
+## 3. Namespace 設計規則
 
 **規則**
 
@@ -83,6 +90,11 @@ builder.Services.AddSingleton<TodoContext>();
 - **一律用 file-scoped 寫法**（`namespace X;`，不用大括號區塊）。
 - **`using` 放在檔案最上面，跟 `namespace` 之間空一行**（C# 官方範本順序，
   不要反過來）；沒有 `using` 的檔案直接從 `namespace` 開始。
+- **資料夾要不要拆，依專案性質決定**：`{Solution}`（Domain）、
+  `{Solution}.Accesses`（資料存取實作）**不拆資料夾**，檔案直接放專案根
+  目錄，靠 namespace 就足夠辨識；`{Solution}.WebApp`（表現層）**維持 MVC
+  慣例資料夾**（`Controllers/`／`Models/`／`Views/`），因為 Razor 慣例路由
+  依賴這個結構。不論拆不拆，資料夾都只是物理上分類檔案，不影響 namespace。
 
 **範例**
 
@@ -102,9 +114,10 @@ public class Todo
 namespace 統一等於專案名稱，一個 `using {專案名稱}` 就能拿到整個專案的型別，
 不用因為挪動檔案到不同資料夾就要跟著改 namespace；file-scoped 寫法少一層
 縮排；`using`／`namespace` 順序維持官方慣例，IDE 自動排序、`dotnet format`
-才不會跟專案慣例打架。
+才不會跟專案慣例打架。Domain／Accesses 靠 namespace 就能辨識檔案，不需要
+資料夾；WebApp 則是框架本身要求資料夾結構，兩者並不衝突。
 
-## 3. Class 設計規則
+## 4. Class 設計規則
 
 **規則**
 
@@ -126,7 +139,7 @@ namespace 統一等於專案名稱，一個 `using {專案名稱}` 就能拿到�
 
 - 每個分類標頭下第一個成員緊接著寫、不空行；同分類內成員之間空一行；
   不同分類之間空兩行。
-- `Imports`（`using`）不算進分類清單、不加標頭，位置規則見第 2 節。
+- `Imports`（`using`）不算進分類清單、不加標頭，位置規則見第 3 節。
 - **屬性一律用完整 `get` / `return`，不用 `=>` expression-bodied**（自動屬性
   `{ get; set; }` 不受影響）。
 - **公開屬性命名**：注入型別去掉介面字首 `I`，維持 PascalCase（不轉小寫）。
@@ -175,7 +188,7 @@ public class TodoContext
 能快速跳到想看的區塊（例如只想看依賴，直接找 `// Fields`）；`this.` 在這個
 專案裡沒有實質區分作用，省略後每一行少一截視覺雜訊。
 
-## 4. Constructor 設計規則
+## 5. Constructor 設計規則
 
 適用於**所有**類別，不限於某一層。
 
@@ -222,7 +235,7 @@ public class TodoContext
 一套命名，看程式碼的人也能立刻知道某個欄位裝的是什麼型別；`// Default`
 讓建構子一眼就能分出「合約檢查」跟「真正做的事（存欄位）」兩個階段。
 
-## 5. Method 設計規則
+## 6. Method 設計規則
 
 **規則**
 
@@ -306,7 +319,7 @@ public IActionResult Create([Bind("Title")] Todo? todo = null)
 把「正常結果」跟「提前擋掉的特殊情況」分開，不用逐行讀邏輯才能找到真正的
 輸出在哪裡。
 
-## 6. Context 設計規則
+## 7. Context 設計規則
 
 **規則**
 
@@ -316,7 +329,7 @@ public IActionResult Create([Bind("Title")] Todo? todo = null)
 - 外部呼叫端（Controller 等）一律注入 `{Solution}Context` 來使用 Repository，
   **不直接注入個別 Repository 介面**。
 - 在 `{Solution}.WebApp/Program.cs` 用 `AddSingleton<{Solution}Context>()`
-  註冊（跟 Repository 介面對實作的註冊一起做，見第 1 節）。
+  註冊（跟 Repository 介面對實作的註冊一起做，見「Repository 設計規則」）。
 
 **範例**
 
@@ -332,7 +345,7 @@ builder.Services.AddSingleton<TodoContext>();
 Entity 就多一個要注入的介面；行為上也貼近未來若導入 EF Core 的 `DbContext`
 用法，轉換成本較低。
 
-## 7. Repository 設計規則
+## 8. Repository 設計規則
 
 **規則**
 
@@ -350,10 +363,16 @@ Entity 就多一個要注入的介面；行為上也貼近未來若導入 EF Cor
 - **呼叫端標準流程**：Repository 查出 Entity → 呼叫 Entity 方法改變狀態 →
   Repository 存回去。**不要**在 Repository 開 `Toggle{XX}(Guid {entity}Id)`
   這種直接用 id 操作、把邏輯藏在 Repository 裡的方法。
+- **DI 註冊**：每個 Repository 介面對實作，在 `{Solution}.WebApp/Program.cs`
+  註冊一次 `AddSingleton<I{Entity}Repository, Mock{Entity}Repository>()`。
 
 **範例**
 
 `ITodoRepository`、`MockTodoRepository`。
+
+```csharp
+builder.Services.AddSingleton<ITodoRepository, MockTodoRepository>();
+```
 
 ```csharp
 {Entity} Add({Entity} entity);
@@ -405,7 +424,7 @@ public IActionResult Toggle(Guid todoId)
 邏輯跟著資料放在一起，不管從 Controller、Console 工具還是測試呼叫，規則都
 保證一致，Repository 也維持單純的存取角色。
 
-## 8. Entity 設計規則
+## 9. Entity 設計規則
 
 **規則**
 
