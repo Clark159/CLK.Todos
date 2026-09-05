@@ -27,14 +27,14 @@ public class TodosController : Controller
         // Search
         var todos = _todoContext.TodoRepository.FindAll();
 
-        // Result
+        // Return
         return View(todos);
     }
 
     // GET: /Todos/Create
     public IActionResult Create()
     {
-        // Result
+        // Return
         return View();
     }
 
@@ -50,7 +50,7 @@ public class TodosController : Controller
         // Execute
         _todoContext.TodoRepository.Add(todo);
 
-        // Result
+        // Return
         return RedirectToAction(nameof(Index));
     }
 
@@ -61,7 +61,7 @@ public class TodosController : Controller
         var todo = _todoContext.TodoRepository.FindById(todoId);
         if (todo is null) return NotFound();
 
-        // Result
+        // Return
         return View(todo);
     }
 
@@ -78,7 +78,7 @@ public class TodosController : Controller
         // Execute
         _todoContext.TodoRepository.Update(todo);
 
-        // Result
+        // Return
         return RedirectToAction(nameof(Index));
     }
 
@@ -89,7 +89,7 @@ public class TodosController : Controller
         var todo = _todoContext.TodoRepository.FindById(todoId);
         if (todo is null) return NotFound();
 
-        // Result
+        // Return
         return View(todo);
     }
 
@@ -101,7 +101,7 @@ public class TodosController : Controller
         // Execute
         _todoContext.TodoRepository.Remove(todoId);
 
-        // Result
+        // Return
         return RedirectToAction(nameof(Index));
     }
 
@@ -118,7 +118,7 @@ public class TodosController : Controller
         todo.ToggleDone();
         _todoContext.TodoRepository.Update(todo);
 
-        // Result
+        // Return
         return RedirectToAction(nameof(Index));
     }
 }

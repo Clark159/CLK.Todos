@@ -5,7 +5,7 @@ namespace CLK.Todos;
 public class Todo
 {
     // Properties
-    public Guid TodoId { get; set; }
+    public Guid TodoId { get; set; } = Guid.CreateVersion7();
 
     [Required(ErrorMessage = "請輸入待辦事項標題")]
     [StringLength(100, ErrorMessage = "標題長度不可超過 100 字")]

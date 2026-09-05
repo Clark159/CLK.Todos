@@ -20,10 +20,11 @@ public class MockTodoRepository : ITodoRepository
         lock (_lock)
         {
             // Execute
-            todo.TodoId = Guid.CreateVersion7();
+            todo.CreateTime = DateTime.UtcNow;
+            todo.UpdateTime = DateTime.UtcNow;
             _todos.Add(todo);
 
-            // Result
+            // Return
             return todo;
         }
     }
@@ -37,15 +38,15 @@ public class MockTodoRepository : ITodoRepository
         lock (_lock)
         {
             // Search
-            var existing = _todos.FirstOrDefault(t => t.TodoId == todo.TodoId);
-            if (existing is null) return false;
+            var entity = _todos.FirstOrDefault(t => t.TodoId == todo.TodoId);
+            if (entity is null) return false;
 
             // Execute
-            existing.Title = todo.Title;
-            existing.IsDone = todo.IsDone;
-            existing.UpdateTime = DateTime.UtcNow;
+            entity.Title = todo.Title;
+            entity.IsDone = todo.IsDone;
+            entity.UpdateTime = DateTime.UtcNow;
 
-            // Result
+            // Return
             return true;
         }
     }
@@ -56,13 +57,13 @@ public class MockTodoRepository : ITodoRepository
         lock (_lock)
         {
             // Search
-            var existing = _todos.FirstOrDefault(t => t.TodoId == todoId);
-            if (existing is null) return false;
+            var entity = _todos.FirstOrDefault(t => t.TodoId == todoId);
+            if (entity is null) return false;
 
             // Execute
-            _todos.Remove(existing);
+            _todos.Remove(entity);
 
-            // Result
+            // Return
             return true;
         }
     }
@@ -72,7 +73,7 @@ public class MockTodoRepository : ITodoRepository
         // Lock
         lock (_lock)
         {
-            // Result
+            // Return
             return _todos.FirstOrDefault(t => t.TodoId == todoId);
         }
     }
@@ -82,7 +83,7 @@ public class MockTodoRepository : ITodoRepository
         // Lock
         lock (_lock)
         {
-            // Result
+            // Return
             return _todos
                 .OrderBy(t => t.IsDone)
                 .ThenByDescending(t => t.CreateTime)

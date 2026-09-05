@@ -333,7 +333,7 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
     // Execute
     _todoContext.TodoRepository.Add(todo);
 
-    // Result
+    // Return
     return RedirectToAction(nameof(Index));
 }
 ```
@@ -351,7 +351,7 @@ public IActionResult Edit(Guid todoId, [Bind("TodoId,Title,IsDone")] Todo todo =
     // Execute
     _todoContext.TodoRepository.Update(todo);
 
-    // Result
+    // Return
     return RedirectToAction(nameof(Index));
 }
 ```
@@ -461,7 +461,7 @@ public IActionResult Toggle(Guid todoId)
     todo.ToggleDone();
     _todoContext.TodoRepository.Update(todo);
 
-    // Result
+    // Return
     return RedirectToAction(nameof(Index));
 }
 ```
@@ -472,7 +472,7 @@ public IActionResult Toggle(Guid todoId)
 Console 工具、還是測試呼叫 `Todo.ToggleDone()`，規則都保證一致，
 Repository 也能維持單純的存取角色，不會越長越肥。
 
-## 13. `// Default` 與 `// Result` 註解慣例
+## 13. `// Default` 與 `// Return` 註解慣例
 
 ### 建構子：`// Default`
 
@@ -491,14 +491,14 @@ public TodoContext(ITodoRepository todoRepository)
 }
 ```
 
-### 方法：`// Result`
+### 方法：`// Return`
 
-方法裡代表「正常結果」的最後一個 `return`，前面加上 `// Result` 註解；
-如果前面有其他邏輯，空一行再接 `// Result`，沒有的話（`// Result` 是
+方法裡代表「正常結果」的最後一個 `return`，前面加上 `// Return` 註解；
+如果前面有其他邏輯，空一行再接 `// Return`，沒有的話（`// Return` 是
 方法本體第一行）就不用空行。
 
 **例外：屬性的 `get` 如果整個只有一行（就只有那個 `return`），不加
-`// Result`，而且整個 `get` 縮成一行寫**，比展開成三行好讀：
+`// Return`，而且整個 `get` 縮成一行寫**，比展開成三行好讀：
 
 ```csharp
 public ITodoRepository TodoRepository
@@ -508,17 +508,18 @@ public ITodoRepository TodoRepository
 ```
 
 **提前結束的 guard clause 式 `return`（例如 `if (todo is null) return NotFound();`
-這種）不用加 `// Result`**——不管它是不是在 `// Contracts` 標籤底下，
+這種）不用加 `// Return`**——不管它是不是在 `// Contracts` 標籤底下，
 這種 return 已經由前面的 `if` 條件自我解釋，只有「這個方法真正要交付的
 結果」才需要標註：
 
 ```csharp
 public IActionResult Edit(Guid todoId)
 {
+    // FindById
     var todo = _todoContext.TodoRepository.FindById(todoId);
     if (todo is null) return NotFound();
 
-    // Result
+    // Return
     return View(todo);
 }
 ```
@@ -535,20 +536,20 @@ public bool Update(Todo todo)
 
     lock (_lock)
     {
-        var existing = _todos.FirstOrDefault(t => t.TodoId == todo.TodoId);
-        if (existing is null) return false;
+        var entity = _todos.FirstOrDefault(t => t.TodoId == todo.TodoId);
+        if (entity is null) return false;
 
-        existing.Title = todo.Title;
-        existing.IsDone = todo.IsDone;
+        entity.Title = todo.Title;
+        entity.IsDone = todo.IsDone;
 
-        // Result
+        // Return
         return true;
     }
 }
 ```
 
 **為什麼這樣做：** `// Default` 讓建構子一眼就能分出「合約檢查」跟
-「真正做的事（存欄位）」兩個階段；`// Result` 讓方法裡「這是提前擋掉的
+「真正做的事（存欄位）」兩個階段；`// Return` 讓方法裡「這是提前擋掉的
 特殊情況」跟「這是正常要交付的結果」清楚分開，不用逐行讀邏輯才能找到
 真正的輸出在哪裡。
 
@@ -582,7 +583,7 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 
     _todoContext.TodoRepository.Add(todo);
 
-    // Result
+    // Return
     return RedirectToAction(nameof(Index));
 }
 ```
@@ -614,7 +615,7 @@ public IActionResult Create([Bind("Title")] Todo todo = null)
 | `// Initialize` | 初始化一個物件或集合的起始狀態 | 尚無，先保留 |
 | `// Default` | 建構子裡「把參數存進欄位」的預設賦值（見第 13 節） | 有 |
 | `// Define` | 定義／組出一個新的物件或值 | 尚無，先保留 |
-| `// Result` | 方法裡代表「正常結果」的最後一個 `return`（見第 13 節） | 有 |
+| `// Return` | 方法裡代表「正常結果」的最後一個 `return`（見第 13 節） | 有 |
 | `// Require` | 方法本體中途（不是開頭參數）冒出的額外前置要求 | 尚無，先保留 |
 | `// Arguments` | 呼叫下一個方法前，組裝要傳入的引數 | 尚無，先保留 |
 | `// Notify` | 發出通知（例如記錄 log、觸發事件通知） | 尚無，先保留 |
@@ -638,14 +639,15 @@ public bool Update(Todo todo)
     lock (_lock)
     {
         // Search
-        var existing = _todos.FirstOrDefault(t => t.TodoId == todo.TodoId);
-        if (existing is null) return false;
+        var entity = _todos.FirstOrDefault(t => t.TodoId == todo.TodoId);
+        if (entity is null) return false;
 
         // Execute
-        existing.Title = todo.Title;
-        existing.IsDone = todo.IsDone;
+        entity.Title = todo.Title;
+        entity.IsDone = todo.IsDone;
+        entity.UpdateTime = DateTime.UtcNow;
 
-        // Result
+        // Return
         return true;
     }
 }
@@ -665,13 +667,13 @@ public IActionResult Toggle(Guid todoId)
     todo.ToggleDone();
     _todoContext.TodoRepository.Update(todo);
 
-    // Result
+    // Return
     return RedirectToAction(nameof(Index));
 }
 ```
 
 只有一個步驟的方法（例如 `FindById`、`FindAll` 這種本體就是單一個 `return`）
-不需要額外標籤，`// Result` 本身就足夠說明。
+不需要額外標籤，`// Return` 本身就足夠說明。
 
 **為什麼這樣做：** 方法一長，光看程式碼要花時間才能分辨「這幾行在做
 同一件事、還是已經換到下一步了」；一個單字標籤讓步驟邊界一眼可辨，
@@ -692,7 +694,7 @@ v4），不要用 `int` 加流水號計數器：
 public class Todo
 {
     // Properties
-    public Guid TodoId { get; set; }
+    public Guid TodoId { get; set; } = Guid.CreateVersion7();
 }
 ```
 
@@ -706,9 +708,10 @@ public class Todo
   - MVC 路由樣板：`Program.cs` 的預設路由 pattern 用
     `{controller=Todos}/{action=Index}/{todoId?}`，不是泛用的 `{id?}`。
   - View：`asp-route-todoId="@todo.TodoId"`（不是 `asp-route-id`）。
-- **產生時機**：由 Repository 的 `Add` 方法在寫入當下呼叫
-  `Guid.CreateVersion7()` 賦值給 `todo.TodoId`（見第 15 節
-  `MockTodoRepository.Add` 的 `// Execute` 區塊），呼叫端不用自己組 id。
+- **產生時機**：由 `Todo` 屬性的預設值在物件建立當下呼叫
+  `Guid.CreateVersion7()` 產生（`= Guid.CreateVersion7()`），**由外部
+  （Entity 本身）提供，Repository 不再自己產生**——`Add` 收到的
+  `todo.TodoId` 已經是有效值，不會在 `// Execute` 區塊裡覆寫。
 - **不需要**額外的流水號欄位（例如 `_nextId`）——GUIDv7 本身已經具備
   時間排序性，拿掉計數器後 Repository 也少一個要處理併發遞增的欄位。
 - MVC Controller、View 不用額外處理型別轉換：ASP.NET Core 的路由與
@@ -745,13 +748,16 @@ public class Todo
 }
 ```
 
-- **`CreateTime`**：物件建立當下的預設值就是最終值，之後不會再變動，
-  不需要 Repository 額外賦值。
-- **`UpdateTime`**：預設值跟 `CreateTime` 一樣（代表「還沒被更新過，
-  最後異動時間就是建立時間」），**由 Repository 的 `Update` 方法在
-  寫入當下重新蓋上 `DateTime.UtcNow`**（見 `MockTodoRepository.Update` 的
-  `// Execute` 區塊，跟 `Title`／`IsDone` 這些欄位一起複製，只是這欄
-  不信任呼叫端傳進來的值，一律用當下時間覆蓋）。
+- **`Add`（新增）**：`CreateTime`／`UpdateTime` 都在 Repository 的 `Add`
+  方法寫入當下重新蓋上 `DateTime.UtcNow`（見第 15 節 `MockTodoRepository.Add`
+  的 `// Execute` 區塊）——不信任 Entity 建構當下的屬性預設值（物件從
+  建構到真正寫入之間可能經過表單繫結、驗證等時間差），一律以「實際寫入
+  的當下」為準重新蓋一次。
+- **`Update`（修改）**：**`CreateTime` 維持資料庫內既有的值，不從呼叫端
+  傳入的 `todo` 覆寫**（找到的既有實體本身已經有正確的建立時間，不去動它）；
+  **`UpdateTime` 由 `Update` 方法在寫入當下重新蓋上 `DateTime.UtcNow`**，
+  跟 `Title`／`IsDone` 這些欄位一起處理，但不信任呼叫端傳進來的值，一律
+  用當下時間覆蓋。
 - Entity 上的狀態轉換方法（例如 `Todo.ToggleDone()`）**不用自己碰
   `UpdateTime`**——只要有經過 Repository 的 `Update` 就一定會蓋到最新
   時間，不用每個會改變狀態的方法各自處理一次。
@@ -761,17 +767,20 @@ public class Todo
   Domain／資料儲存層存當地時間。
 
 目前套用的地方：`Todo.CreateTime`／`UpdateTime`、
-`MockTodoRepository.Add`（`CreateTime` 用屬性預設值，不用額外賦值）／
-`Update`（蓋 `UpdateTime`）／`FindAll`（排序用 `CreateTime`）。目前
-`Index.cshtml`／`Delete.cshtml` 直接顯示 `CreateTime`／`UpdateTime`
-原始值（UTC），還沒轉當地時區——之後有需要再補時區轉換。
+`MockTodoRepository.Add`（蓋 `CreateTime`／`UpdateTime`）／
+`Update`（`CreateTime` 維持既有值不動，蓋 `UpdateTime`）／
+`FindAll`（排序用 `CreateTime`）。目前 `Index.cshtml`／`Delete.cshtml`
+直接顯示 `CreateTime`／`UpdateTime` 原始值（UTC），還沒轉當地時區——
+之後有需要再補時區轉換。
 
 **為什麼這樣做：** `CreateTime`／`UpdateTime` 一組對稱命名，比
-`CreatedAt` 這種只顧建立、沒有對應更新時間的命名更完整；蓋
-`UpdateTime` 的責任統一放在 Repository 的 `Update` 方法（跟第 11 節
-「Repository 只放存取資料的方法」一致——這是持久化當下的稽核動作，
-不是 Entity 自身的業務邏輯），不用每個會呼叫 `Update` 的地方（Controller、
-Entity 方法）各自記得要蓋時間戳記，只要走過 `Update` 就保證正確。存
+`CreatedAt` 這種只顧建立、沒有對應更新時間的命名更完整；蓋時間戳記的
+責任統一放在 Repository 的 `Add`／`Update` 方法（跟第 11 節「Repository
+只放存取資料的方法」一致——這是持久化當下的稽核動作，不是 Entity 自身的
+業務邏輯），不用每個呼叫端（Controller、Entity 方法）各自記得要蓋時間
+戳記，只要走過 `Add`／`Update` 就保證正確；`Update` 不動 `CreateTime`
+是因為建立時間屬於資料一旦寫入就不該再變的歷史事實，只有真正經過
+`Add` 那一刻才算數。存
 UTC 是因為 `DateTime.Now` 綁死伺服器當地時區，一旦伺服器搬到別的時區、
 或多台伺服器分佈在不同時區，同一筆資料在不同機器上取到的「當地時間」
 會不一致；UTC 是單一、不受時區影響的絕對時間基準，排序、比較、跨系統

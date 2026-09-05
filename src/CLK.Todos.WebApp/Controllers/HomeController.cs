@@ -23,20 +23,20 @@ public class HomeController : Controller
     // Methods
     public IActionResult Index()
     {
-        // Result
+        // Return
         return View();
     }
 
     public IActionResult Privacy()
     {
-        // Result
+        // Return
         return View();
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
-        // Result
+        // Return
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 }
