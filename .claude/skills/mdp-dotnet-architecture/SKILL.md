@@ -2,7 +2,7 @@
 name: mdp-dotnet-architecture
 description: .NET 專案的目錄與分層結構（Workspace／Architecture）、程式碼撰寫慣例（Namespace／Class／Field／Constructor／Properties／Method）、以及類別設計規範（Context／Repository／Entity／Dependency Injection）的操作版規則與檢查清單；規劃 .NET 專案架構、撰寫或審查 .NET 程式碼、新增 Entity 時套用。
 metadata:
-  generated: 2026-09-06T23:32:10+08:00
+  generated: 2026-09-06T23:55:46+08:00
 ---
 
 ## 使用時機
@@ -86,6 +86,9 @@ Context／Repository／Entity、或設定 Dependency Injection 時，套用本�
 
 - 命名：`_` + 參數命名（注入型別去掉介面字首 `I`，第一個字母轉小寫）。
 - `// Fields` 分類內，lock 物件排最前面，其餘欄位接在後面。
+- 集合物件（例如 Repository 內部持有的 `List<{Entity}>`）命名用
+  `{entity}List`（單數 Entity 名稱 + `List`），不要用複數形式
+  （不要用 `_todos`／`_users`）。
 
 ## 06. Constructor 設計規範
 
@@ -262,7 +265,7 @@ IReadOnlyList<{Entity}> FindAllByXX();
 3. 在 `{Domain}.Accesses` 專案裡建立 `Mock{Entity}Repository`（非持久化
    實作）：
    - 成員排序（Fields／Constructors／Methods），lock 物件排 `// Fields`
-     最前面。
+     最前面，集合欄位命名 `{entity}List`（不用複數形式）。
    - `Add` 蓋 `CreateTime`／`UpdateTime`；`Update` 只蓋 `UpdateTime`；
      Command 方法找不到資料就丟 `KeyNotFoundException`。
    - 之後若要接真實資料庫，比照命名為 `Ef{Entity}Repository`，建構子
@@ -310,6 +313,8 @@ IReadOnlyList<{Entity}> FindAllByXX();
       成員排序規則。
 - [ ] 欄位命名為 `_` + 參數命名（介面型別去掉 `I`、第一個字母轉小寫）。
 - [ ] `// Fields` 分類內 lock 物件排最前面。
+- [ ] 集合物件欄位命名為 `{entity}List`（單數 Entity 名稱 + `List`），
+      沒有用複數形式（`_todos`／`_users`）。
 - [ ] 建構子適用於所有類別，不限於某一層。
 - [ ] 建構子參數命名：介面型別去掉 `I`、第一個字母轉小寫。
 - [ ] 建構子內 `// Contracts` 檢查後接 `// Default` 賦值，`// Default`

@@ -202,10 +202,13 @@ public class TodoContext
 
 - 命名：`_` + 參數命名（注入型別去掉介面字首 `I`，第一個字母轉小寫）。
 - `// Fields` 分類內，lock 物件排最前面，其餘欄位接在後面。
+- 集合物件（例如 Repository 內部持有的 `List<{Entity}>`）命名用
+  `{entity}List`（單數 Entity 名稱 + `List`），不要用複數形式
+  （不要用 `_todos`／`_users`）。
 
 **範例**
 
-- `MockTodoRepository` 的 lock 物件排最前面
+- `MockTodoRepository` 的 lock 物件排最前面，集合欄位命名 `_todoList`
 
 ```csharp
 public class MockTodoRepository : ITodoRepository
@@ -213,7 +216,7 @@ public class MockTodoRepository : ITodoRepository
     // Fields
     private readonly object _lock = new();
 
-    private readonly List<Todo> _todos = new();
+    private readonly List<Todo> _todoList = new();
 }
 ```
 
@@ -221,7 +224,9 @@ public class MockTodoRepository : ITodoRepository
 
 欄位命名可直接從注入型別反推，不用另外設計命名規則；`private readonly`
 避免建構後被意外改動；lock 物件排最前面，一眼就能看出這個類別有執行緒
-安全考量。
+安全考量。集合欄位統一用 `{entity}List` 而不是複數形式，是因為複數化
+規則因單字而異（`Todo` → `Todos`、`Category` → `Categories`），命名時
+還要判斷單複數變化；`{entity}List` 固定套用同一個尾詞，不用特別判斷。
 
 ## 06. Constructor 設計規範
 

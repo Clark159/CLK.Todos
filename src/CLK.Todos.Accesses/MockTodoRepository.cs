@@ -7,7 +7,7 @@ public class MockTodoRepository : ITodoRepository
     // Fields
     private readonly object _lock = new();
 
-    private readonly List<Todo> _todos = new();
+    private readonly List<Todo> _todoList = new();
 
 
     // Methods
@@ -22,7 +22,7 @@ public class MockTodoRepository : ITodoRepository
             // Execute
             todo.CreateTime = DateTime.UtcNow;
             todo.UpdateTime = DateTime.UtcNow;
-            _todos.Add(todo);
+            _todoList.Add(todo);
         }
     }
 
@@ -35,7 +35,7 @@ public class MockTodoRepository : ITodoRepository
         lock (_lock)
         {
             // Search
-            var entity = _todos.FirstOrDefault(t => t.TodoId == todo.TodoId);
+            var entity = _todoList.FirstOrDefault(t => t.TodoId == todo.TodoId);
             if (entity is null) throw new KeyNotFoundException($"Todo not found: {todo.TodoId}");
 
             // Execute
@@ -51,11 +51,11 @@ public class MockTodoRepository : ITodoRepository
         lock (_lock)
         {
             // Search
-            var entity = _todos.FirstOrDefault(t => t.TodoId == todoId);
+            var entity = _todoList.FirstOrDefault(t => t.TodoId == todoId);
             if (entity is null) throw new KeyNotFoundException($"Todo not found: {todoId}");
 
             // Execute
-            _todos.Remove(entity);
+            _todoList.Remove(entity);
         }
     }
 
@@ -65,7 +65,7 @@ public class MockTodoRepository : ITodoRepository
         lock (_lock)
         {
             // Return
-            return _todos.FirstOrDefault(t => t.TodoId == todoId);
+            return _todoList.FirstOrDefault(t => t.TodoId == todoId);
         }
     }
 
@@ -75,7 +75,7 @@ public class MockTodoRepository : ITodoRepository
         lock (_lock)
         {
             // Return
-            return _todos
+            return _todoList
                 .OrderBy(t => t.IsDone)
                 .ThenByDescending(t => t.CreateTime)
                 .ToList();
