@@ -2,7 +2,7 @@
 name: mdp-dotnet-architecture
 description: .NET 專案的目錄與分層結構（Workspace／Architecture）、程式碼撰寫慣例（Namespace／Class／Field／Constructor／Properties／Method）、以及類別設計規範（Context／Repository／Entity／Dependency Injection）的操作版規則與檢查清單；規劃 .NET 專案架構、撰寫或審查 .NET 程式碼、新增 Entity 時套用。
 metadata:
-  generated: 2026-09-06T21:46:04+08:00
+  generated: 2026-09-06T23:32:10+08:00
 ---
 
 ## 使用時機
@@ -241,7 +241,7 @@ IReadOnlyList<{Entity}> FindAllByXX();
 - Host 層本身的生命週期（例如 MVC Controller 每個請求一個實例）由
   ASP.NET Core 框架管理，不在這裡的規範範圍內。
 
-## 新增 Entity 檢查清單
+## 新增 Entity 執行清單
 
 1. 在 `{Domain}` 專案裡建立 `{Entity}` 類別：
    - 主鍵屬性 `{Entity}Id`，型別 `Guid`，預設值 `Guid.CreateVersion7()`。
@@ -310,6 +310,7 @@ IReadOnlyList<{Entity}> FindAllByXX();
       成員排序規則。
 - [ ] 欄位命名為 `_` + 參數命名（介面型別去掉 `I`、第一個字母轉小寫）。
 - [ ] `// Fields` 分類內 lock 物件排最前面。
+- [ ] 建構子適用於所有類別，不限於某一層。
 - [ ] 建構子參數命名：介面型別去掉 `I`、第一個字母轉小寫。
 - [ ] 建構子內 `// Contracts` 檢查後接 `// Default` 賦值，`// Default`
       跟 `// Contracts` 空一行、跟賦值本身不空行。
