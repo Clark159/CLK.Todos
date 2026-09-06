@@ -1,6 +1,6 @@
 ---
 name: mdp-dotnet-architecture
-description: .NET 專案的目錄與分層結構（Workspace／Architecture）、程式碼撰寫慣例（Namespace／Class／Field／Constructor／Properties／Method）、以及類別設計規範（Context／Repository／Entity／Dependency Injection）的操作版規則與檢查清單；規劃 .NET 專案架構、撰寫或審查 .NET 程式碼、新增 Entity 時套用。
+description: .NET 專案的目錄與分層結構（Workspace／Architecture）、程式碼撰寫慣例（Namespace／Class／Field／Constructor／Properties／Method）、以及類別設計規範（Context／Repository／Entity／Dependency Injection）的可執行版規則與檢查清單；規劃 .NET 專案架構、撰寫或審查 .NET 程式碼、新增 Entity 時套用。
 metadata:
   generated: 2026-09-06T23:55:46+08:00
 ---
