@@ -5,7 +5,7 @@
 > 每一節統一用「規則 → 範例 → 說明」整理。規則一律用 `{Domain}`、`{Entity}` 佔位符描述，不綁定具體名稱。範例具體標註 CLK.Todos 專案裡
 `Todo` 這個 Entity 示範規則的樣子，是規則的一個實例，不是規則本身。
 
->同資料夾的 `SKILL.md` 是 AI 依這份設計規範，翻譯產生給AI使用的Skill工作流程／檢查清單，轉換規則與驗證方式見同資料夾的 `conversion.md`。
+>同資料夾的 `SKILL.md` 是 AI 依這份設計規範，翻譯產生給AI使用的Skill工作流程／檢查清單，轉換規則與驗證方式見獨立的 `mdp-skills-conversion` Skill。
 
 ## 目錄
 
